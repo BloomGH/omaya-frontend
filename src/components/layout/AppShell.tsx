@@ -140,7 +140,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           fixed lg:static inset-y-0 left-0 z-30 lg:z-auto
           ${sidebarCollapsed ? "lg:w-[64px]" : "lg:w-[220px]"}
           w-[220px] flex-none h-full flex flex-col py-4
-          bg-white border-r border-gray-100
+          bg-white border-r border-gray-200
           transition-[width] duration-200 ease-in-out motion-reduce:transition-none overflow-hidden
           ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
@@ -426,7 +426,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       </aside>
 
       {/* ── MAIN CONTENT ─────────────────────────────────────── */}
-      <main className="flex-1 bg-surface-app relative flex flex-col lg:rounded-l-2xl overflow-y-auto">
+      <main className="flex-1 bg-surface-app relative flex flex-col lg:rounded-tl-2xl lg:shadow-[-6px_0_20px_-6px_rgba(0,0,0,0.12)] overflow-y-auto">
         {/* Mobile top bar */}
         <div className="lg:hidden flex items-center gap-3 px-4 py-3 flex-shrink-0">
           <button
