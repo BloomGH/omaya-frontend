@@ -189,3 +189,20 @@
         url("/publicsans.ttf") format("truetype");
     font-display: swap;
 }
+
+/* NB International Pro — matches the marketing website's primary font */
+@font-face {
+    font-family: "Nb international pro webfont";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/fonts/nb-international-pro-400.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Nb international pro webfont";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("/fonts/nb-international-pro-700.woff2") format("woff2");
+}
