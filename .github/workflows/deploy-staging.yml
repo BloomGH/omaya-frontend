@@ -1,0 +1,55 @@
+name: deploy-staging
+
+# Push to `staging` -> build the Vite app with the staging API base URL baked in,
+# then rsync dist/ to the staging box where Caddy serves it on
+# app-staging.omayacare.com. Replaces Vercel for the staging frontend.
+#
+# Required repo secrets (Settings -> Secrets -> Actions):
+#   STAGING_SSH_KEY  - private half of the omaya-staging-deploy key (ed25519)
+#   STAGING_HOST     - staging box public IP / hostname
+#   STAGING_USER     - ssh user (ubuntu)
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Vite inlines VITE_* at build time; .env.production is the reliable channel
+      # for a `vite build` (production mode). Add VITE_SENTRY_DSN here if you want
+      # frontend error reporting on staging.
+      - name: Write staging build env
+        run: |
+          cat > .env.production <<'EOF'
+          VITE_API_BASE_URL=https://backend-api-staging.omayacare.com
+          VITE_SENTRY_ENVIRONMENT=staging
+          VITE_SENTRY_TRACES_SAMPLE_RATE=0
+          EOF
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Deploy dist to staging box
+        env:
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          HOST: ${{ secrets.STAGING_HOST }}
+          SSH_USER: ${{ secrets.STAGING_USER }}
+        run: |
+          printf '%s\n' "$SSH_KEY" > "$HOME/staging_key"
+          chmod 600 "$HOME/staging_key"
+          # --delete so removed assets don't linger; trailing slash flattens dist/
+          rsync -az --delete \
+            -e "ssh -i $HOME/staging_key -o StrictHostKeyChecking=accept-new" \
+            dist/ "$SSH_USER@$HOST:/home/ubuntu/omaya-staging/frontend-dist/"
