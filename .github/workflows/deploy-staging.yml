@@ -22,10 +22,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version: 22
+          cache: pnpm
 
       # Vite inlines VITE_* at build time; .env.production is the reliable channel
       # for a `vite build` (production mode). Add VITE_SENTRY_DSN here if you want
@@ -38,8 +41,8 @@ jobs:
           VITE_SENTRY_TRACES_SAMPLE_RATE=0
           EOF
 
-      - run: npm ci
-      - run: npm run build
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build   # tsc -b && vite build
 
       - name: Deploy dist to staging box
         env:
