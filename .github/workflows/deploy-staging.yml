@@ -1,13 +1,10 @@
 name: deploy-staging
 
 # Push to `staging` -> build the Vite app with the staging API base URL baked in,
-# then rsync dist/ to the staging box where Caddy serves it on
-# app-staging.omayacare.com. Replaces Vercel for the staging frontend.
+# then upload dist/ to S3. The staging box pulls it on a 30s systemd timer and
+# Caddy serves it on app-staging.omayacare.com. Replaces Vercel; no inbound SSH.
 #
-# Required repo secrets (Settings -> Secrets -> Actions):
-#   STAGING_SSH_KEY  - private half of the omaya-staging-deploy key (ed25519)
-#   STAGING_HOST     - staging box public IP / hostname
-#   STAGING_USER     - ssh user (ubuntu)
+# Auth: GitHub OIDC -> IAM role omaya-frontend-staging-ci (no stored AWS keys).
 on:
   push:
     branches: [staging]
@@ -16,6 +13,10 @@ on:
 concurrency:
   group: deploy-staging-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  id-token: write   # OIDC token to assume the AWS upload role
+  contents: read
 
 jobs:
   build-deploy:
@@ -54,15 +55,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build   # tsc -b && vite build
 
-      - name: Deploy dist to staging box
-        env:
-          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
-          HOST: ${{ secrets.STAGING_HOST }}
-          SSH_USER: ${{ secrets.STAGING_USER }}
-        run: |
-          printf '%s\n' "$SSH_KEY" > "$HOME/staging_key"
-          chmod 600 "$HOME/staging_key"
-          # --delete so removed assets don't linger; trailing slash flattens dist/
-          rsync -az --delete \
-            -e "ssh -i $HOME/staging_key -o StrictHostKeyChecking=accept-new" \
-            dist/ "$SSH_USER@$HOST:/home/ubuntu/omaya-staging/frontend-dist/"
+      - name: Configure AWS creds via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::868899308575:role/omaya-frontend-staging-ci
+          aws-region: eu-central-1
+
+      - name: Upload build to S3 (box pulls it on a 30s timer)
+        run: aws s3 sync dist/ s3://omaya-frontend-staging/ --delete --only-show-errors
