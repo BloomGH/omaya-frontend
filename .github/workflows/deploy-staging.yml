@@ -22,13 +22,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # pnpm 11 to match the repo's pnpm-workspace.yaml settings (minimumReleaseAge,
+      # trustPolicy, allowBuilds — pnpm 10+ features). No `cache: pnpm` so setup-node
+      # doesn't probe `pnpm store path` (which needs a packages field).
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
 
       # Vite inlines VITE_* at build time; .env.production is the reliable channel
       # for a `vite build` (production mode). Add VITE_SENTRY_DSN here if you want
