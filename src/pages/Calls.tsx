@@ -3,7 +3,7 @@ import { Search, ArrowLeft, SlidersHorizontal, X } from "lucide-react";
 import { useCalls, useCall } from "../hooks/useCalls";
 import { CallListItem } from "../components/calls/CallListItem";
 import { CallDetail } from "../components/calls/CallDetail";
-import { Input } from "@/components/ui/Input";
+import { Input } from "../components/ui/Input";
 import { Skeleton } from "../components/ui/skeleton";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { useSlideIndicator } from "../hooks/useSlideIndicator";
@@ -51,8 +51,7 @@ if (search.trim()) {
       return true;
     });
     // dateFilter intentionally excluded — date filtering happens server-side via apiDate.
-    // react-doctor-disable-next-line react-doctor/exhaustive-deps
-  }, [calls, statusFilter, dateFilter, search]);
+  }, [calls, statusFilter, search]);
 
   const callIndicator = useSlideIndicator(listRef, '[data-slide-active="true"]', [
     selectedCallId,
