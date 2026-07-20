@@ -1,5 +1,6 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
+import axios from "axios";
 import * as Sentry from "@sentry/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -9,7 +10,7 @@ import {
   Navigate,
   useLocation,
 } from "react-router-dom";
-import SignIn from "./pages/SignIn";
+import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import SetupPassword from "./pages/SetupPassword";
 import ChangePassword from "./pages/ChangePassword";
@@ -25,7 +26,7 @@ import DocsLoading from "./components/DocsLoading";
 
 // Authenticated dashboard pages are code-split: each loads on first navigation
 // instead of riding in the initial bundle, so sign-in stays light. The auth
-// pages (SignIn etc.) are kept eager — they're on the critical first-paint path.
+// pages (Login etc.) are kept eager — they're on the critical first-paint path.
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const MothersPage = lazy(() => import("./pages/Mothers"));
 const CallsPage = lazy(() => import("./pages/Calls"));
@@ -50,7 +51,19 @@ const isDocsHost = window.location.hostname.startsWith("docs.");
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, staleTime: 30_000 },
+    queries: {
+      // Don't retry client-error responses — a 401/403/404/422 won't succeed on
+      // a second try; retrying just doubles backend load and delays the error /
+      // forced-sign-out path. Retry once for everything else (network, 5xx).
+      retry: (count, error) => {
+        const status = axios.isAxiosError(error)
+          ? error.response?.status
+          : undefined;
+        if (status && [401, 403, 404, 422].includes(status)) return false;
+        return count < 1;
+      },
+      staleTime: 30_000,
+    },
   },
 });
 
@@ -124,7 +137,8 @@ export default function App() {
                 // Docs host: only sign-in + the gated docs. Everything funnels
                 // to /docs so the host never exposes the app surface.
                 <SentryRoutes>
-                  <Route path="/" element={<SignIn />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/" element={<Navigate to="/login" replace />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/change-password" element={<ChangePassword />} />
                   <Route path="/docs" element={gatedDocs} />
@@ -133,7 +147,8 @@ export default function App() {
               ) : (
                 <SentryRoutes>
                   {/* Public auth routes */}
-                  <Route path="/" element={<SignIn />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/" element={<Navigate to="/login" replace />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/activate" element={<SetupPassword />} />
                   <Route path="/reset" element={<SetupPassword />} />

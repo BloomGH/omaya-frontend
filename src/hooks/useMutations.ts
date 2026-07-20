@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { StaffRole, RolePermissions, Me } from "../types";
-import { getClinician, getToken, setSession, updateToken } from "../lib/auth";
+import { getClinician, setSession, clearMustChange } from "../lib/auth";
 import { toMe } from "./useMe";
 import { toMother } from "./useMothers";
 
@@ -189,9 +189,8 @@ export const useUpdateMe = () => {
       queryClient.setQueryData(["me"], data);
       // Keep localStorage clinician name in sync so AppShell reflects the change
       const stored = getClinician();
-      const token = getToken();
-      if (stored && token) {
-        setSession(token, { ...stored, name: data.name }, data.mustChangePassword);
+      if (stored) {
+        setSession({ ...stored, name: data.name }, data.mustChangePassword);
       }
     },
   });
@@ -213,8 +212,10 @@ export const useChangePassword = () => {
       });
       return res.data as { token: string; token_type: string; expires_in: number };
     },
-    onSuccess: (data) => {
-      updateToken(data.token);
+    onSuccess: () => {
+      // The backend re-set the session cookie with must_change_password
+      // cleared; just clear the client-side flag.
+      clearMustChange();
       queryClient.invalidateQueries({ queryKey: ["me"] });
     },
   });

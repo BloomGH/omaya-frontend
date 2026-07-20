@@ -1,0 +1,13 @@
+# Omaya frontend pre-commit — secret scanning only (gitleaks + private-key guard).
+# Deliberately does NOT run whitespace/format hooks so it never fights Prettier.
+# Requires the `pre-commit` tool: `pipx install pre-commit && pre-commit install`.
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: detect-private-key

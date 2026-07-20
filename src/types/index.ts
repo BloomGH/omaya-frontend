@@ -79,6 +79,9 @@ export interface Call {
 
 export interface EscalationItem {
   id: string;
+  // Originating call — stable across the provisional→real-alert transition, so
+  // the chime keys on this (not `id`, which changes when a provisional reconciles).
+  callId: string;
   motherName: string;
   dayPostpartum: number;
   severity: Severity;

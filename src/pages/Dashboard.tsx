@@ -26,13 +26,16 @@ import { Alert, AlertTitle, AlertDescription } from "../components/ui/alert";
 const Dashboard = () => {
   const navigate = useNavigate();
   const { openDrawer } = useDrawer();
+  const { can } = useAuth();
   const { data: mothers = [], isLoading: mothersLoading } = useMothers();
   const todayISO = new Date().toISOString().slice(0, 10);
   const { data: calls = [], isLoading: callsLoading, isError: callsError, refetch: refetchCalls } = useCalls(todayISO);
-  const { data: escalations = [], isLoading: escalationsLoading, isError: escalationsError, refetch: refetchEscalations } = useEscalations();
+  // Escalations carry mother PHI — only fetch when the caller may act on them.
+  // Backend also enforces this (require_permission("escalate")); this avoids the
+  // ungated request and a misleading empty-state for view-only roles.
+  const { data: escalations = [], isLoading: escalationsLoading, isError: escalationsError, refetch: refetchEscalations } = useEscalations({ enabled: can("escalate") });
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const acknowledgeMutation = useAcknowledgeAlert();
-  const { can } = useAuth();
 
   const [acknowledgeModal, setAcknowledgeModal] = useState<{
     open: boolean;

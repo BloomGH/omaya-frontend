@@ -1,6 +1,6 @@
 import axios, { AxiosError } from "axios";
 import { toast } from "sonner";
-import { getToken, clearSession } from "./auth";
+import { clearSession } from "./auth";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
@@ -8,15 +8,10 @@ export const api = axios.create({
   baseURL: BASE_URL,
   headers: { "Content-Type": "application/json" },
   timeout: 15000,
-});
-
-// Attach the portal JWT as a Bearer token on every request when signed in.
-api.interceptors.request.use((config) => {
-  const token = getToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  // Send the HttpOnly `omaya_session` cookie on every request (incl. the
+  // cross-subdomain prod case). The cookie is the session credential now —
+  // JS can't read it, so there's no Bearer interceptor anymore.
+  withCredentials: true,
 });
 
 api.interceptors.response.use(
@@ -25,13 +20,22 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const url = error.config?.url ?? "";
 
-    // A 401 on a protected request means the token expired/was revoked.
+    // A 401 on a protected request is AUTHORITATIVE: the HttpOnly session
+    // cookie has expired or been revoked (JS can't read it, so the cached
+    // profile is only an optimistic "logged-in" guess — see lib/auth.ts).
+    // The first such 401 — including the bootstrap /auth/me fired by
+    // AuthContext — is what turns the optimistic shell into a real logout.
     // The /auth/* endpoints handle their own 401s inline (wrong password,
     // bad setup token), so don't hijack those.
     if (status === 401 && !url.startsWith("/auth/")) {
       clearSession();
-      if (window.location.pathname !== "/") {
-        window.location.assign("/");
+      if (window.location.pathname !== "/login") {
+        // Preserve the intended destination so re-login lands back here
+        // (mirrors RequireAuth's ?next= handling).
+        const next = encodeURIComponent(
+          window.location.pathname + window.location.search,
+        );
+        window.location.assign(`/login?next=${next}`);
       }
     }
 

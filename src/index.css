@@ -180,12 +180,25 @@
     body {
         @apply bg-background text-foreground;
     }
+    ::selection {
+        background-color: hsl(var(--primary-200));
+        color: hsl(var(--primary-900));
+    }
+}
+
+/* NB International Pro — matches the marketing website's primary font */
+@font-face {
+    font-family: "Nb international pro webfont";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/fonts/nb-international-pro-400.woff2") format("woff2");
 }
 
 @font-face {
-    font-family: "PublicSans";
-    src:
-        local("Public Sans"),
-        url("/publicsans.ttf") format("truetype");
+    font-family: "Nb international pro webfont";
+    font-style: normal;
+    font-weight: 700;
     font-display: swap;
+    src: url("/fonts/nb-international-pro-700.woff2") format("woff2");
 }

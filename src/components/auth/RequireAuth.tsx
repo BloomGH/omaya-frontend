@@ -13,7 +13,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
   if (!isAuthenticated()) {
     const next = encodeURIComponent(pathname + search);
-    return <Navigate to={`/?next=${next}`} replace />;
+    return <Navigate to={`/login?next=${next}`} replace />;
   }
   if (getMustChange()) {
     return <Navigate to="/change-password" replace />;
