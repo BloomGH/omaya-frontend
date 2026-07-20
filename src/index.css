@@ -180,6 +180,10 @@
     body {
         @apply bg-background text-foreground;
     }
+    ::selection {
+        background-color: hsl(var(--primary-200));
+        color: hsl(var(--primary-900));
+    }
 }
 
 @font-face {

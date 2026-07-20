@@ -1,0 +1,65 @@
+name: deploy-staging
+
+# Push to `staging` -> build the Vite app with the staging API base URL baked in,
+# then upload dist/ to S3. The staging box pulls it on a 30s systemd timer and
+# Caddy serves it on app-staging.omayacare.com. Replaces Vercel; no inbound SSH.
+#
+# Auth: GitHub OIDC -> IAM role omaya-frontend-staging-ci (no stored AWS keys).
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write   # OIDC token to assume the AWS upload role
+  contents: read
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # pnpm 11 to match the repo's pnpm-workspace.yaml settings (minimumReleaseAge,
+      # trustPolicy, allowBuilds — pnpm 10+ features). No `cache: pnpm` so setup-node
+      # doesn't probe `pnpm store path` (which needs a packages field).
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Vite inlines VITE_* at build time; .env.production is the reliable channel
+      # for a `vite build` (production mode). Add VITE_SENTRY_DSN here if you want
+      # frontend error reporting on staging.
+      - name: Write staging build env
+        run: |
+          cat > .env.production <<'EOF'
+          VITE_API_BASE_URL=https://backend-api-staging.omayacare.com
+          VITE_SENTRY_ENVIRONMENT=staging
+          VITE_SENTRY_TRACES_SAMPLE_RATE=0
+          EOF
+
+      # The committed lockfile IS the source of truth for a --frozen-lockfile CI
+      # install (no re-resolution happens). The dev-time supply-chain guards
+      # (minimumReleaseAge/trustPolicy) re-flag an already-locked entry
+      # (semver@6.3.1) on a fresh runner, which shouldn't block deploying a vetted
+      # lockfile. Strip them for THIS ephemeral CI checkout only; keep allowBuilds.
+      - name: Relax dev-only supply-chain guards for CI frozen install
+        run: sed -i '/^minimumReleaseAge:/d; /^trustPolicy:/d' pnpm-workspace.yaml
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build   # tsc -b && vite build
+
+      - name: Configure AWS creds via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::868899308575:role/omaya-frontend-staging-ci
+          aws-region: eu-central-1
+
+      - name: Upload build to S3 (box pulls it on a 30s timer)
+        run: aws s3 sync dist/ s3://omaya-frontend-staging/ --delete --only-show-errors

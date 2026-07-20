@@ -7,7 +7,6 @@ import {
   Phone,
   UserCog,
   Settings,
-  Bell,
   ChevronsUpDown,
   LogOut,
   Menu,
@@ -19,9 +18,7 @@ import { useDrawer } from "../../contexts/DrawerContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { RolePermissions } from "../../types";
 import { getClinician, clearSession, initialsOf } from "../../lib/auth";
-import { useEscalations } from "../../hooks/useEscalations";
 import { useSlideIndicator } from "../../hooks/useSlideIndicator";
-import { getSeverityTokens } from "../../lib/badge-helpers";
 import { Sheet, SheetContent } from "../../components/ui/sheet";
 import {
   Tooltip,
@@ -30,6 +27,7 @@ import {
   TooltipProvider,
 } from "../../components/ui/tooltip";
 import { Button } from "../../components/ui/Button";
+import { NotificationsBell } from "./NotificationsBell";
 import {
   Popover,
   PopoverContent,
@@ -74,18 +72,6 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
-
-  // Open escalation alerts double as the in-app notifications. Same query
-  // (and 60s poll) the dashboard uses, so the cache is shared — no extra
-  // network cost for surfacing the bell count.
-  const { data: escalations = [] } = useEscalations();
-  const notifCount = escalations.length;
-
-  const handleNotifNavigate = () => {
-    setNotifOpen(false);
-    navigate("/dashboard");
-  };
 
   const visibleNavItems = navItems.filter((item) => {
     const required = navItemPermissions[item.route];
@@ -141,7 +127,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           ${sidebarCollapsed ? "lg:w-[64px]" : "lg:w-[220px]"}
           w-[220px] flex-none h-full flex flex-col py-4
           bg-white border-r border-gray-200
-          transition-[width] duration-200 ease-in-out motion-reduce:transition-none overflow-hidden
+          transition-[width,transform] duration-200 ease-in-out motion-reduce:transition-none overflow-hidden
           ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
       >
@@ -272,109 +258,6 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
         {/* Bottom section */}
         <div className="mt-auto px-2">
-          {/* Notifications */}
-          <div className="flex mb-2 px-1">
-            <Popover open={notifOpen} onOpenChange={setNotifOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={
-                    notifCount > 0
-                      ? `Notifications, ${notifCount} needing attention`
-                      : "Notifications"
-                  }
-                  className="bell-trigger p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors relative"
-                >
-                  <Bell size={18} className="bell-swing" />
-                  {notifCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1 bg-primary text-white text-[9px] font-bold leading-[15px] text-center rounded-full">
-                      {notifCount > 9 ? "9+" : notifCount}
-                    </span>
-                  )}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent
-                side={sidebarCollapsed ? "right" : "top"}
-                align="start"
-                className="w-80 p-0 overflow-hidden"
-              >
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                  <span className="text-sm font-bold text-gray-900">
-                    Notifications
-                  </span>
-                  {notifCount > 0 && (
-                    <span className="text-xs font-medium text-gray-400">
-                      {notifCount} needing attention
-                    </span>
-                  )}
-                </div>
-
-                {notifCount === 0 ? (
-                  <div className="flex flex-col items-center justify-center gap-1 px-4 py-8 text-center">
-                    <Bell size={22} className="text-gray-300" />
-                    <p className="text-sm font-medium text-gray-500">
-                      You're all caught up
-                    </p>
-                    <p className="text-xs font-normal text-gray-400">
-                      Crisis and elevated alerts will appear here.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="max-h-80 overflow-y-auto py-1">
-                    {escalations.map((item) => {
-                      const tokens = getSeverityTokens(item.severity);
-                      const overdue = item.timeLeftMinutes <= 0;
-                      const timeLabel = overdue
-                        ? "Overdue"
-                        : item.timeLeftMinutes < 60
-                          ? `${item.timeLeftMinutes}m left`
-                          : `${Math.floor(item.timeLeftMinutes / 60)}h left`;
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={handleNotifNavigate}
-                          className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-start gap-2.5"
-                        >
-                          <span
-                            className={`mt-1 shrink-0 w-2 h-2 rounded-full ${tokens.dot}`}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-sm font-medium text-gray-900 truncate">
-                                {item.motherName}
-                              </span>
-                              <span
-                                className={`text-xs font-medium shrink-0 ${overdue ? "text-red-600" : "text-gray-400"}`}
-                              >
-                                {timeLabel}
-                              </span>
-                            </div>
-                            <span className="text-xs font-normal text-gray-500">
-                              {item.severity.charAt(0).toUpperCase() +
-                                item.severity.slice(1)}
-                              {" · "}Day {item.dayPostpartum}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  onClick={handleNotifNavigate}
-                  className="w-full px-4 py-2.5 border-t border-gray-100 text-xs font-medium text-primary hover:bg-gray-50 transition-colors text-center"
-                >
-                  View all on dashboard
-                </button>
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="h-px bg-gray-100 mb-2" />
-
           {/* Profile popover */}
           <Popover>
             <PopoverTrigger asChild>
@@ -427,8 +310,10 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
       {/* ── MAIN CONTENT ─────────────────────────────────────── */}
       <main className="flex-1 bg-surface-app relative flex flex-col lg:rounded-tl-2xl lg:shadow-[-6px_0_20px_-6px_rgba(0,0,0,0.12)] overflow-y-auto">
-        {/* Mobile top bar */}
+        {/* Mobile top bar — logo + menu toggle. The bell floats top-right
+            (below), so it's not repeated here. */}
         <div className="lg:hidden flex items-center gap-3 px-4 py-3 flex-shrink-0">
+          <img src="/logo.png" className="h-7 w-auto object-contain" alt="Omaya Care" />
           <button
             type="button"
             onClick={() => setMobileSidebarOpen(true)}
@@ -436,12 +321,17 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           >
             <Menu size={22} />
           </button>
-          <img src="/logo.png" className="h-[50px] w-auto object-contain" alt="Omaya Care" />
+        </div>
+
+        {/* Global notifications bell — floats top-right so it lines up with
+            the first line of the page (e.g. the dashboard date). */}
+        <div className="absolute top-3 right-4 lg:top-4 lg:right-4 z-10">
+          <NotificationsBell />
         </div>
 
         <div
           key={location.pathname}
-          className="flex flex-1 flex-col min-h-0 p-4 lg:p-6 animate-in fade-in-0 duration-200 motion-reduce:animate-none"
+          className="flex flex-1 flex-col min-h-0 px-4 lg:px-6 pt-4 lg:pt-6 pb-4 lg:pb-6 animate-in fade-in-0 duration-200 motion-reduce:animate-none"
         >
           {children}
         </div>

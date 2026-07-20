@@ -13,7 +13,7 @@ function toEscalation(raw: Record<string, unknown>): EscalationItem {
   };
 }
 
-export const useEscalations = () => {
+export const useEscalations = (options?: { enabled?: boolean }) => {
   return useQuery<EscalationItem[]>({
     queryKey: ["escalations"],
     queryFn: async () => {
@@ -23,5 +23,8 @@ export const useEscalations = () => {
       );
     },
     refetchInterval: 60000,
+    // Callers without the `escalate` permission must not fetch escalation data
+    // (it contains mother PHI). Defaults to enabled for the dashboard.
+    enabled: options?.enabled ?? true,
   });
 };

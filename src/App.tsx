@@ -1,5 +1,6 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
+import axios from "axios";
 import * as Sentry from "@sentry/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -50,7 +51,19 @@ const isDocsHost = window.location.hostname.startsWith("docs.");
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, staleTime: 30_000 },
+    queries: {
+      // Don't retry client-error responses — a 401/403/404/422 won't succeed on
+      // a second try; retrying just doubles backend load and delays the error /
+      // forced-sign-out path. Retry once for everything else (network, 5xx).
+      retry: (count, error) => {
+        const status = axios.isAxiosError(error)
+          ? error.response?.status
+          : undefined;
+        if (status && [401, 403, 404, 422].includes(status)) return false;
+        return count < 1;
+      },
+      staleTime: 30_000,
+    },
   },
 });
 

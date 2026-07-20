@@ -51,8 +51,8 @@ const CallDetail = ({ call, isLoading }: CallDetailProps) => {
       toast.success("Call triggered. She will receive a call shortly.");
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 409) toast.error("A call is already in progress for this mother.");
-      else if (status === 403) toast.error("Cannot call. Consent has been withdrawn.");
+      if (status === 409) toast.error("This mother is not active, so a call can't be placed.");
+      else if (status === 403) toast.error("Your role does not have permission to place calls.");
       else toast.error("Could not trigger call. Please try again.");
     }
   };
