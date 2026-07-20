@@ -18,6 +18,7 @@ import { useDrawer } from "../../contexts/DrawerContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { RolePermissions } from "../../types";
 import { getClinician, clearSession, initialsOf } from "../../lib/auth";
+import { logout } from "../../lib/auth-api";
 import { useSlideIndicator } from "../../hooks/useSlideIndicator";
 import { Sheet, SheetContent } from "../../components/ui/sheet";
 import {
@@ -102,7 +103,10 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
     };
   }, [hospitalName]);
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    // Ask the server to clear the HttpOnly session cookie (JS can't). Never
+    // let a failed logout trap the user signed-in — clear + navigate regardless.
+    await logout();
     queryClient.removeQueries({ queryKey: ["me"] });
     clearSession();
     navigate("/", { replace: true });
@@ -317,6 +321,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           <button
             type="button"
             onClick={() => setMobileSidebarOpen(true)}
+            aria-label="Open menu"
             className="text-gray-600 hover:text-gray-800 transition-colors"
           >
             <Menu size={22} />

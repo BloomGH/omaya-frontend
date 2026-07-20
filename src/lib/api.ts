@@ -1,6 +1,6 @@
 import axios, { AxiosError } from "axios";
 import { toast } from "sonner";
-import { getToken, clearSession } from "./auth";
+import { clearSession } from "./auth";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
@@ -8,15 +8,10 @@ export const api = axios.create({
   baseURL: BASE_URL,
   headers: { "Content-Type": "application/json" },
   timeout: 15000,
-});
-
-// Attach the portal JWT as a Bearer token on every request when signed in.
-api.interceptors.request.use((config) => {
-  const token = getToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  // Send the HttpOnly `omaya_session` cookie on every request (incl. the
+  // cross-subdomain prod case). The cookie is the session credential now —
+  // JS can't read it, so there's no Bearer interceptor anymore.
+  withCredentials: true,
 });
 
 api.interceptors.response.use(
