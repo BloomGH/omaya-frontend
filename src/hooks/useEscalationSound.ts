@@ -54,22 +54,28 @@ function playSuccessChime() {
   });
 }
 
-// Plays the chime whenever the number of active escalations increases.
-// Skips the initial load so the sound only fires on genuinely new arrivals.
+// Plays the chime whenever a genuinely NEW escalation appears (H3). Keyed on the
+// originating call_id (stable across the provisional→real-alert transition, so a
+// provisional reconciling to its real alert does NOT double-chime). Count-based
+// detection missed new alerts when the set churned (one resolved + one new →
+// count unchanged) and double-fired on reconcile; id-diffing fixes both.
 export function useEscalationSound(escalations: EscalationItem[] | undefined) {
-  const prevCount = useRef<number | null>(null);
+  const prevKeys = useRef<Set<string> | null>(null);
 
   useEffect(() => {
-    const count = escalations?.length ?? 0;
-    // prevCount must persist across renders for the whole component lifetime —
-    // it's how we detect a genuinely new escalation. Do NOT reset it in a
-    // cleanup: the effect re-runs precisely when `escalations` changes (i.e. a
-    // new alert arrives), so a cleanup that nulls the ref would fire first and
-    // suppress the very chime this hook exists to play. First run stays silent
-    // because prevCount starts null.
-    if (prevCount.current !== null && count > prevCount.current) {
-      playSuccessChime();
+    const keys = new Set((escalations ?? []).map((e) => e.callId || e.id));
+    // prevKeys must persist across renders for the whole component lifetime —
+    // it's how we detect a genuinely new escalation. First run stays silent
+    // (prevKeys starts null) so the initial load doesn't chime; after that,
+    // chime once if ANY key is new since the last poll tick.
+    if (prevKeys.current !== null) {
+      for (const k of keys) {
+        if (!prevKeys.current.has(k)) {
+          playSuccessChime();
+          break;
+        }
+      }
     }
-    prevCount.current = count;
+    prevKeys.current = keys;
   }, [escalations]);
 }

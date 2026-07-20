@@ -20,13 +20,22 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const url = error.config?.url ?? "";
 
-    // A 401 on a protected request means the token expired/was revoked.
+    // A 401 on a protected request is AUTHORITATIVE: the HttpOnly session
+    // cookie has expired or been revoked (JS can't read it, so the cached
+    // profile is only an optimistic "logged-in" guess — see lib/auth.ts).
+    // The first such 401 — including the bootstrap /auth/me fired by
+    // AuthContext — is what turns the optimistic shell into a real logout.
     // The /auth/* endpoints handle their own 401s inline (wrong password,
     // bad setup token), so don't hijack those.
     if (status === 401 && !url.startsWith("/auth/")) {
       clearSession();
       if (window.location.pathname !== "/login") {
-        window.location.assign("/login");
+        // Preserve the intended destination so re-login lands back here
+        // (mirrors RequireAuth's ?next= handling).
+        const next = encodeURIComponent(
+          window.location.pathname + window.location.search,
+        );
+        window.location.assign(`/login?next=${next}`);
       }
     }
 

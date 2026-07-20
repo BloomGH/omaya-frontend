@@ -26,7 +26,9 @@ export const NotificationsBell: React.FC = () => {
   // Escalation alerts carry mother PHI (name, postpartum day). Only roles with
   // the `escalate` permission may see or fetch them — mirrors the Dashboard
   // gate. Passing `enabled` also stops the 60s poll for everyone else.
-  const { data: escalations = [] } = useEscalations({ enabled: canEscalate });
+  const { data: escalations = [], isLoading, isError } = useEscalations({
+    enabled: canEscalate,
+  });
   const notifCount = escalations.length;
   useEscalationSound(escalations);
 
@@ -38,7 +40,15 @@ export const NotificationsBell: React.FC = () => {
   if (!canEscalate) return null;
 
   return (
-    <Popover open={notifOpen} onOpenChange={setNotifOpen}>
+    <>
+      {/* a11y: the chime has no visual equivalent for deaf/HoH clinicians —
+          announce the alert count to screen readers whenever it changes. */}
+      <span className="sr-only" role="status" aria-live="assertive">
+        {notifCount > 0
+          ? `${notifCount} escalation alert${notifCount === 1 ? "" : "s"} needing attention`
+          : ""}
+      </span>
+      <Popover open={notifOpen} onOpenChange={setNotifOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -73,7 +83,22 @@ export const NotificationsBell: React.FC = () => {
           )}
         </div>
 
-        {notifCount === 0 ? (
+        {isError ? (
+          <div className="flex flex-col items-center justify-center gap-1 px-4 py-8 text-center">
+            <Bell size={22} className="text-gray-300" />
+            <p className="text-sm font-medium text-gray-500">
+              Couldn't load alerts
+            </p>
+            <p className="text-xs font-normal text-gray-400">
+              Retrying automatically — check your connection.
+            </p>
+          </div>
+        ) : isLoading && notifCount === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-1 px-4 py-8 text-center">
+            <Bell size={22} className="text-gray-300 animate-pulse" />
+            <p className="text-sm font-medium text-gray-500">Loading alerts…</p>
+          </div>
+        ) : notifCount === 0 ? (
           <div className="flex flex-col items-center justify-center gap-1 px-4 py-8 text-center">
             <Bell size={22} className="text-gray-300" />
             <p className="text-sm font-medium text-gray-500">
@@ -135,5 +160,6 @@ export const NotificationsBell: React.FC = () => {
         </button>
       </PopoverContent>
     </Popover>
+    </>
   );
 };

@@ -5,6 +5,7 @@ import { EscalationItem } from "../types";
 function toEscalation(raw: Record<string, unknown>): EscalationItem {
   return {
     id: raw.id as string,
+    callId: (raw.call_id as string) ?? "",
     motherName: (raw.mother_name as string) ?? "",
     dayPostpartum: (raw.day_postpartum as number) ?? 0,
     severity: (raw.severity as EscalationItem["severity"]) ?? "routine",
@@ -22,7 +23,11 @@ export const useEscalations = (options?: { enabled?: boolean }) => {
         toEscalation,
       );
     },
-    refetchInterval: 60000,
+    // Adaptive polling (D1b): baseline 60s — zero extra steady-state DB load —
+    // dropping to 15s only WHILE unresolved escalations exist, so a live crisis
+    // (including a provisional crisis alert) surfaces within ~15s without polling
+    // harder the rest of the time.
+    refetchInterval: (query) => ((query.state.data?.length ?? 0) > 0 ? 15000 : 60000),
     // Callers without the `escalate` permission must not fetch escalation data
     // (it contains mother PHI). Defaults to enabled for the dashboard.
     enabled: options?.enabled ?? true,
