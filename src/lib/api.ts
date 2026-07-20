@@ -30,8 +30,8 @@ api.interceptors.response.use(
     // bad setup token), so don't hijack those.
     if (status === 401 && !url.startsWith("/auth/")) {
       clearSession();
-      if (window.location.pathname !== "/") {
-        window.location.assign("/");
+      if (window.location.pathname !== "/login") {
+        window.location.assign("/login");
       }
     }
 
