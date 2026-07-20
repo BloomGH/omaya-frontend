@@ -2,6 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { EscalationItem } from "../types";
 
+// Live-alert SLO: a new crisis (including a provisional crisis alert) must
+// surface in the dashboard/bell within ~15s, so we poll at this cadence even
+// while the list is empty — otherwise the FIRST crisis after a quiet period
+// could take up to a minute to appear.
+const LIVE_ALERT_POLL_MS = 15000;
+
 function toEscalation(raw: Record<string, unknown>): EscalationItem {
   return {
     id: raw.id as string,
@@ -23,11 +29,10 @@ export const useEscalations = (options?: { enabled?: boolean }) => {
         toEscalation,
       );
     },
-    // Adaptive polling (D1b): baseline 60s — zero extra steady-state DB load —
-    // dropping to 15s only WHILE unresolved escalations exist, so a live crisis
-    // (including a provisional crisis alert) surfaces within ~15s without polling
-    // harder the rest of the time.
-    refetchInterval: (query) => ((query.state.data?.length ?? 0) > 0 ? 15000 : 60000),
+    // Poll at the live-alert cadence (~15s) whether or not there are currently
+    // active escalations, so the first crisis after a quiet period surfaces
+    // within the SLO rather than waiting up to a minute for the next poll.
+    refetchInterval: LIVE_ALERT_POLL_MS,
     // Callers without the `escalate` permission must not fetch escalation data
     // (it contains mother PHI). Defaults to enabled for the dashboard.
     enabled: options?.enabled ?? true,

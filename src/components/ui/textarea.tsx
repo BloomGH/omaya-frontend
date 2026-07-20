@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useId } from "react"
 import { cn } from "@/lib/utils"
 
 export interface TextareaProps extends React.ComponentProps<"textarea"> {
@@ -14,7 +15,7 @@ function Textarea({
   ref,
   ...props
 }: TextareaProps) {
-    const generatedId = React.useId();
+    const generatedId = useId();
     const textareaId = id ?? generatedId;
     return (
       <div className={cn("flex flex-col", containerClassName)}>

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useId } from "react";
 
 import { cn } from "@/lib/utils";
 export interface InputProps extends React.ComponentProps<"input"> {
@@ -21,7 +22,7 @@ function Input({
   ref,
   ...props
 }: InputProps) {
-    const generatedId = React.useId();
+    const generatedId = useId();
     const inputId = id ?? generatedId;
     return (
       <div
