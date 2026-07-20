@@ -39,7 +39,7 @@ m1719 1 c115 -61 202 -163 231 -275 14 -52 10 -263 -7 -344 -85 -401 -399
 function Wordmark() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 726.111782 107.073446" className="h-7 w-auto block" aria-label="Omaya Care">
-      <g transform="translate(-34.540684,110.114460) scale(0.100000,-0.100000)" fill="#7a2850" stroke="none">
+      <g transform="translate(-34.54,110.11) scale(0.1,-0.1)" fill="#7a2850" stroke="none">
         <path d="M599 1081 c-102 -40 -183 -115 -228 -211 -22 -48 -26 -68 -26 -155 1
 -121 22 -185 89 -260 92 -105 214 -151 376 -142 148 7 263 64 333 163 l32 46
 3 -101 3 -101 134 0 135 0 0 211 c0 130 4 226 11 250 18 57 58 91 117 97 43 4

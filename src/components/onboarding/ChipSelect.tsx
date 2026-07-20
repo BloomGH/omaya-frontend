@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 
 interface Option {
   value: string;
@@ -15,6 +16,8 @@ interface ChipSelectProps {
 }
 
 const ChipSelect = ({ options, selected, onChange, max, id }: ChipSelectProps) => {
+  const selectedSet = useMemo(() => new Set(selected), [selected]);
+
   const toggleOption = (value: string) => {
     const option = options.find((o) => o.value === value);
     if (option?.disabled) return;
@@ -32,7 +35,7 @@ const ChipSelect = ({ options, selected, onChange, max, id }: ChipSelectProps) =
   return (
     <div id={id} className="flex flex-wrap gap-3">
       {options.map((option) => {
-        const isSelected = selected.includes(option.value);
+        const isSelected = selectedSet.has(option.value);
         return (
           <button
             type="button"

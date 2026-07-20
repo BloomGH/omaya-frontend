@@ -17,9 +17,12 @@ function Input({
   fullWidth,
   leftIcon,
   rightIcon,
+  id,
   ref,
   ...props
 }: InputProps) {
+    const generatedId = React.useId();
+    const inputId = id ?? generatedId;
     return (
       <div
         className={cn(
@@ -29,7 +32,10 @@ function Input({
         )}
       >
         {label && (
-          <label className="text-sm font-medium text-gray-700 mb-1.5 ml-0.5">
+          <label
+            htmlFor={inputId}
+            className="text-sm font-medium text-gray-700 mb-1.5 ml-0.5"
+          >
             {label}
           </label>
         )}
@@ -40,6 +46,7 @@ function Input({
             </span>
           )}
           <input
+            id={inputId}
             type={type}
             className={cn(
               "flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",

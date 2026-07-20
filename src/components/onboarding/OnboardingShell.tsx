@@ -33,6 +33,7 @@ const OnboardingShell = ({
         <button
           type="button"
           onClick={onClose}
+          aria-label="Close"
           className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-50"
         >
           <X size={20} />

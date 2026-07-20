@@ -119,6 +119,7 @@ const MotherDetail = ({
                     type="button"
                     onClick={onEditClick}
                     disabled={!onEditClick}
+                    aria-label="Edit mother details"
                     className="text-gray-300 hover:text-gray-500 transition-colors disabled:cursor-not-allowed"
                   >
                     <Pencil size={14} />
