@@ -59,6 +59,7 @@ const CallDetail = ({ call, isLoading }: CallDetailProps) => {
 
   if (!call && !isLoading) {
     return (
+      // react-doctor-disable-next-line react-doctor/no-transition-all -- animate-in enter keyframe (duration-N is animation-duration), not a CSS transition:all
       <div className="flex flex-col items-center justify-center h-full animate-in fade-in-0 zoom-in-95 duration-300 motion-reduce:animate-none">
         <PhoneCall className="text-gray-300 mb-2" size={48} />
         <p className="text-sm text-gray-400 font-normal">Select a call to view details</p>
@@ -86,6 +87,7 @@ const CallDetail = ({ call, isLoading }: CallDetailProps) => {
   // to the details view above.
   if (view === "transcript") {
     return (
+      // react-doctor-disable-next-line react-doctor/no-transition-all -- animate-in enter keyframe (duration-N is animation-duration), not a CSS transition:all
       <div className="flex flex-1 flex-col min-h-0 animate-in fade-in-0 slide-in-from-right-2 duration-200 motion-reduce:animate-none">
         {/* Back header */}
         <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
@@ -123,6 +125,11 @@ const CallDetail = ({ call, isLoading }: CallDetailProps) => {
               const startsGroup = idx === 0 || arr[idx - 1].speaker !== row.speaker;
               return (
                 <div
+                  // Composite key on an append-only transcript that never
+                  // reorders or filters; idx only guarantees uniqueness when a
+                  // speaker repeats identical text. This is not the reorder/
+                  // filter hazard the rule targets.
+                  // react-doctor-disable-next-line react-doctor/no-array-index-as-key
                   key={`${idx}-${row.speaker}-${row.text}`}
                   className={`flex flex-col ${startsGroup ? "mt-5 first:mt-0" : "mt-1"} ${
                     isOmaya ? "items-start" : "items-end"
@@ -163,6 +170,7 @@ const CallDetail = ({ call, isLoading }: CallDetailProps) => {
   }
 
   return (
+    // react-doctor-disable-next-line react-doctor/no-transition-all -- animate-in enter keyframe (duration-N is animation-duration), not a CSS transition:all
     <div className="flex flex-1 flex-col min-h-0 animate-in fade-in-0 duration-200 motion-reduce:animate-none">
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
 

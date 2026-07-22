@@ -25,7 +25,7 @@ const Toggle = ({ enabled, onChange, locked = false, label }: ToggleProps) => (
     onClick={locked ? undefined : onChange}
     className={`
       relative inline-flex w-11 h-6 rounded-full flex-shrink-0
-      transition-all duration-200 ease-in-out
+      transition-colors duration-200 ease-in-out
       ${enabled ? 'bg-primary' : 'bg-gray-200'}
       ${locked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
     `}
@@ -33,7 +33,7 @@ const Toggle = ({ enabled, onChange, locked = false, label }: ToggleProps) => (
     <span
       className={`
         absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm
-        transition-all duration-200 ease-in-out
+        transition-transform duration-200 ease-in-out
         ${enabled ? 'translate-x-5' : 'translate-x-0.5'}
       `}
     />

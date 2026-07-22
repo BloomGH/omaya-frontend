@@ -158,7 +158,7 @@ const AddStaffModal = ({ isOpen, onClose }: AddStaffModalProps) => {
                     role="radio"
                     aria-checked={selected}
                     onClick={() => setSelectedRole(r.name as StaffRole)}
-                    className={`border rounded-xl p-3 cursor-pointer transition-all text-left ${
+                    className={`border rounded-xl p-3 cursor-pointer transition-colors text-left ${
                       selected
                         ? "border-primary bg-primary-100"
                         : "border-gray-200 bg-white hover:border-gray-300"

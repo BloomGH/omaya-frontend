@@ -46,6 +46,9 @@ const ChangePassword = () => {
       navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(extractApiError(err).message);
+    } finally {
+      // Clear the busy flag on both paths — a reset only after a resolved
+      // request leaves the button stuck disabled when the request rejects.
       setSubmitting(false);
     }
   };

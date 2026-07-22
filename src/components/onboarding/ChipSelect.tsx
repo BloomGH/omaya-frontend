@@ -44,7 +44,7 @@ const ChipSelect = ({ options, selected, onChange, max, id }: ChipSelectProps) =
             disabled={option.disabled}
             aria-pressed={isSelected}
             className={`
-              px-4 py-2.5 rounded-xl border text-sm transition-all flex flex-col text-left
+              px-4 py-2.5 rounded-xl border text-sm transition-[color,background-color,border-color,opacity] flex flex-col text-left
               ${
                 option.disabled
                   ? 'border-gray-200 bg-gray-50 text-gray-400 opacity-60'

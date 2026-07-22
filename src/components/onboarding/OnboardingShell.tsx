@@ -43,8 +43,8 @@ const OnboardingShell = ({
       {/* Progress bar */}
       <div className="w-full h-0.5 bg-gray-100 flex-shrink-0">
         <div
-          className="h-full bg-primary transition-[width] duration-300 ease-out motion-reduce:transition-none"
-          style={{ width: `${progressPercent}%` }}
+          className="h-full w-full origin-left bg-primary transition-transform duration-300 ease-out motion-reduce:transition-none"
+          style={{ transform: `scaleX(${progressPercent / 100})` }}
         />
       </div>
 

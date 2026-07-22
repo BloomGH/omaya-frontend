@@ -183,7 +183,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           {navIndicator && (
             <div
               aria-hidden
-              className="absolute z-0 rounded-lg bg-primary-100 transition-all duration-300 ease-out pointer-events-none"
+              className="absolute z-0 rounded-lg bg-primary-100 transition-transform duration-300 ease-out pointer-events-none"
               style={{
                 top: 0,
                 left: navIndicator.left,
@@ -214,7 +214,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
               onClick={() => setMobileSidebarOpen(false)}
               className={({ isActive }) => `
                 relative z-10 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm group
-                transition-all duration-200 ease-out
+                transition-[color,background-color,transform] duration-200 ease-out
                 ${
                   isActive
                     ? "text-primary font-medium"
@@ -334,6 +334,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           <NotificationsBell />
         </div>
 
+        {/* react-doctor-disable-next-line react-doctor/no-transition-all -- animate-in enter keyframe (duration-N is animation-duration), not a CSS transition:all */}
         <div
           key={location.pathname}
           className="flex flex-1 flex-col min-h-0 px-4 lg:px-6 pt-4 lg:pt-6 pb-4 lg:pb-6 animate-in fade-in-0 duration-200 motion-reduce:animate-none"

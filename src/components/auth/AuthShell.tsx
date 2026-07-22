@@ -128,7 +128,7 @@ export function AuthShell({
       </div>
 
       {/* Right — photo panel */}
-      <div className="block relative overflow-hidden h-full w-full rounded-l-3xl max-lg:hidden">
+      <div className="relative overflow-hidden h-full w-full rounded-l-3xl max-lg:hidden">
         <img
           src="/hero-mother.jpg"
           alt="Mother holding newborn while on a phone call"
