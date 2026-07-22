@@ -33,6 +33,10 @@ const Login = () => {
       });
     } catch (err) {
       setError(extractApiError(err, "Invalid email or password.").message);
+    } finally {
+      // Reset in finally so a rejected sign-in clears the busy flag too — a
+      // trailing reset on the success path alone would leave the button stuck
+      // disabled if the request rejects.
       setSubmitting(false);
     }
   };

@@ -648,7 +648,7 @@ const AddMother = ({ onClose }: AddMotherProps = {}) => {
                 updateField("consentCalls", !formData.consentCalls)
               }
               className={`
-                w-full text-left border rounded-xl px-5 py-4 flex items-start gap-4 cursor-pointer transition-all
+                w-full text-left border rounded-xl px-5 py-4 flex items-start gap-4 cursor-pointer transition-colors
                 ${formData.consentCalls ? "border-primary bg-primary-100" : "border-gray-200 bg-white"}
                 ${touched && !formData.consentCalls ? "border-red-400" : ""}
               `}
@@ -689,7 +689,7 @@ const AddMother = ({ onClose }: AddMotherProps = {}) => {
                 updateField("consentRecording", !formData.consentRecording)
               }
               className={`
-                w-full text-left border rounded-xl px-5 py-4 flex items-start gap-4 cursor-pointer transition-all
+                w-full text-left border rounded-xl px-5 py-4 flex items-start gap-4 cursor-pointer transition-colors
                 ${formData.consentRecording ? "border-primary bg-primary-100" : "border-gray-200 bg-white"}
               `}
             >

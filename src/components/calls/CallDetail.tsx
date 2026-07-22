@@ -123,6 +123,11 @@ const CallDetail = ({ call, isLoading }: CallDetailProps) => {
               const startsGroup = idx === 0 || arr[idx - 1].speaker !== row.speaker;
               return (
                 <div
+                  // Composite key on an append-only transcript that never
+                  // reorders or filters; idx only guarantees uniqueness when a
+                  // speaker repeats identical text. This is not the reorder/
+                  // filter hazard the rule targets.
+                  // react-doctor-disable-next-line react-doctor/no-array-index-as-key
                   key={`${idx}-${row.speaker}-${row.text}`}
                   className={`flex flex-col ${startsGroup ? "mt-5 first:mt-0" : "mt-1"} ${
                     isOmaya ? "items-start" : "items-end"

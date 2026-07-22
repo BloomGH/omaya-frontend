@@ -183,7 +183,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           {navIndicator && (
             <div
               aria-hidden
-              className="absolute z-0 rounded-lg bg-primary-100 transition-all duration-300 ease-out pointer-events-none"
+              className="absolute z-0 rounded-lg bg-primary-100 transition-transform duration-300 ease-out pointer-events-none"
               style={{
                 top: 0,
                 left: navIndicator.left,
@@ -214,7 +214,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
               onClick={() => setMobileSidebarOpen(false)}
               className={({ isActive }) => `
                 relative z-10 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm group
-                transition-all duration-200 ease-out
+                transition-[color,background-color,transform] duration-200 ease-out
                 ${
                   isActive
                     ? "text-primary font-medium"

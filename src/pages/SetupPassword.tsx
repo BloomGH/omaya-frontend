@@ -97,11 +97,14 @@ const SetupPassword = () => {
             return;
           }
           setError("This link has expired. Request a new one.");
-          setSubmitting(false);
           return;
         }
       }
       setError(apiErr.message);
+    } finally {
+      // Reset in finally so every exit — success, retry-success, and each
+      // error branch — clears the busy flag. (On the navigate() success paths
+      // this runs just before unmount, which is a harmless no-op.)
       setSubmitting(false);
     }
   };

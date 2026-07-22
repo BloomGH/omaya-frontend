@@ -42,8 +42,11 @@ export const NotificationsBell: React.FC = () => {
   return (
     <>
       {/* a11y: the chime has no visual equivalent for deaf/HoH clinicians —
-          announce the alert count to screen readers whenever it changes. */}
-      <span className="sr-only" role="status" aria-live="assertive">
+          announce the alert count to screen readers whenever it changes.
+          Polite (role="status" is implicitly polite) so re-announcing on every
+          count change — including when alerts are acknowledged — doesn't
+          interrupt or clear the screen reader's queued speech. */}
+      <span className="sr-only" role="status" aria-live="polite">
         {notifCount > 0
           ? `${notifCount} escalation alert${notifCount === 1 ? "" : "s"} needing attention`
           : ""}

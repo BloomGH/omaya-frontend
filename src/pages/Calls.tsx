@@ -196,18 +196,16 @@ if (search.trim()) {
             <>
               <div
                 aria-hidden
-                className="absolute left-0 right-0 top-0 z-0 bg-gray-50 transition-all duration-300 ease-out pointer-events-none"
+                className="absolute left-0 right-0 top-0 z-0 h-px origin-top bg-gray-50 transition-transform duration-300 ease-out pointer-events-none"
                 style={{
-                  height: callIndicator.height,
-                  transform: `translateY(${callIndicator.top}px)`,
+                  transform: `translateY(${callIndicator.top}px) scaleY(${callIndicator.height})`,
                 }}
               />
               <div
                 aria-hidden
-                className={`absolute left-0 top-0 z-0 w-1 transition-all duration-300 ease-out pointer-events-none ${activeAccent}`}
+                className={`absolute left-0 top-0 z-0 w-1 h-px origin-top transition-transform duration-300 ease-out pointer-events-none ${activeAccent}`}
                 style={{
-                  height: callIndicator.height,
-                  transform: `translateY(${callIndicator.top}px)`,
+                  transform: `translateY(${callIndicator.top}px) scaleY(${callIndicator.height})`,
                 }}
               />
             </>

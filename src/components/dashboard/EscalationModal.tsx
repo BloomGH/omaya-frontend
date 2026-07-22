@@ -106,8 +106,8 @@ const EscalationModal = ({ isOpen, onClose, onAcknowledge, item }: EscalationMod
           </div>
           <div className="h-1 bg-gray-100 rounded-full mt-2 overflow-hidden">
             <div
-              className="h-full bg-primary rounded-full transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
+              className="h-full w-full origin-left bg-primary rounded-full transition-transform duration-500"
+              style={{ transform: `scaleX(${progressPercent / 100})` }}
             />
           </div>
         </div>
