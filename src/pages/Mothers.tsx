@@ -234,6 +234,7 @@ const MothersPage = () => {
                 <SlidersHorizontal size={14} />
                 <span>Filter</span>
                 {(severityFilter !== "all" || statusFilter !== "all") && (
+                  // react-doctor-disable-next-line react-doctor/no-transition-all -- animate-in enter keyframe (duration-N is animation-duration), not a CSS transition:all
                   <span className="ml-1 w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center animate-in zoom-in-50 duration-150 motion-reduce:animate-none">
                     {(severityFilter !== "all" ? 1 : 0) +
                       (statusFilter !== "all" ? 1 : 0)}

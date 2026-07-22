@@ -31,26 +31,6 @@
           "src/pages/NewDischarge.tsx"
         ],
         "rules": ["react-doctor/no-giant-component"]
-      },
-      {
-        // False positives. no-transition-all fires on tailwindcss-animate ENTER
-        // keyframes (`animate-in fade-in-0 … duration-N`): it reads the
-        // `duration-N` (which is animation-duration for animate-in, not a CSS
-        // transition) as an implicit `transition: all`. These are one-shot GPU
-        // keyframe enters on opacity/transform — compositor-driven, no layout
-        // thrash — so they are NOT the `transition: all` smell the rule targets
-        // (its own criteria only cover inline `style={{ transition: 'all' }}`).
-        // Every REAL `transition-all` was migrated to specific properties, so
-        // these files no longer contain the pattern the rule is meant to catch.
-        // Re-review if a genuine `transition-all` is ever added to one of these.
-        "files": [
-          "src/components/calls/CallDetail.tsx",
-          "src/components/mothers/MotherDetail.tsx",
-          "src/components/layout/AppShell.tsx",
-          "src/pages/Calls.tsx",
-          "src/pages/Mothers.tsx"
-        ],
-        "rules": ["react-doctor/no-transition-all"]
       }
     ]
   }
