@@ -29,6 +29,8 @@ import {
 } from "../../components/ui/tooltip";
 import { Button } from "../../components/ui/Button";
 import { NotificationsBell } from "./NotificationsBell";
+import { AlertSoundPrompt } from "./AlertSoundPrompt";
+import { SidebarAlertSoundReminder } from "./SidebarAlertSoundReminder";
 import {
   Popover,
   PopoverContent,
@@ -262,6 +264,11 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
         {/* Bottom section */}
         <div className="mt-auto px-2">
+          {/* Muted-sound reminder — only for escalate-capable clinicians who have
+              turned the alert chime off. Sits above the profile row at the very
+              bottom of the sidebar. */}
+          <SidebarAlertSoundReminder collapsed={sidebarCollapsed} />
+
           {/* Profile popover */}
           <Popover>
             <PopoverTrigger asChild>
@@ -401,6 +408,12 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── FIRST-LOGIN ALERT-SOUND PROMPT ───────────────────── */}
+      {/* AppShell sits behind Protected and wraps every page, so mounting here
+          yields exactly one instance. Self-gated: only shows once, only for
+          roles that can act on escalations. */}
+      <AlertSoundPrompt />
     </div>
   );
 };

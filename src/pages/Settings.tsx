@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { Loader2, Lock, Eye, EyeOff, AlertCircle, AlertTriangle } from 'lucide-react';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -6,6 +7,7 @@ import { Skeleton } from '../components/ui/skeleton';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { useMe } from '../hooks/useMe';
 import { useUpdateMe, useChangePassword } from '../hooks/useMutations';
+import { useEscalationSound } from '../hooks/useEscalationSound';
 import { isAlertSoundEnabled, setAlertSoundEnabled } from '../lib/alert-prefs';
 import { toast } from 'sonner';
 
@@ -260,7 +262,14 @@ const ChangePasswordSection = () => {
 const SettingsPage = () => {
   const { data: me, isLoading } = useMe();
   const updateMe = useUpdateMe();
+  const [params] = useSearchParams();
+  // `location.key` changes on EVERY navigation — including navigating to the same
+  // URL — so keying the scroll effect on it re-drives the scroll even when the
+  // clinician is already on /settings?section=notifications and clicks the link
+  // again (the search params alone wouldn't change, so the effect wouldn't re-run).
+  const location = useLocation();
   const passwordSectionRef = useRef<HTMLDivElement>(null);
+  const notificationsSectionRef = useRef<HTMLDivElement>(null);
 
   const [name, setName] = useState('');
   // In-app escalation alert sound — persisted per-browser in localStorage. This
@@ -268,18 +277,40 @@ const SettingsPage = () => {
   // explicit opt-out. Muting only silences the chime — OS notifications (when
   // permitted) still fire so a muted tab isn't left with no signal.
   const [alertSound, setAlertSound] = useState<boolean>(() => isAlertSoundEnabled());
+  // `unlock` resumes the shared AudioContext + requests OS-notification permission,
+  // but only works inside a user gesture. Passing `undefined` means this hook
+  // instance never chimes itself — we only want `unlock`.
+  const { unlock } = useEscalationSound(undefined);
 
   const toggleAlertSound = () => {
-    setAlertSound((prev) => {
-      const next = !prev;
-      setAlertSoundEnabled(next);
-      return next;
-    });
+    const next = !alertSound;
+    setAlertSound(next);
+    setAlertSoundEnabled(next);
+    // Turning sound ON is the moment to cross the browser autoplay gate and ask
+    // for notification permission — this click is the required gesture. No-op when
+    // disabling; harmless if permission is already granted/denied.
+    if (next) unlock();
   };
 
   useEffect(() => {
     if (me) setName(me.name ?? '');
   }, [me]);
+
+  // Deep-link from the notifications bell's alert-sound link
+  // (/settings?section=notifications) — scroll the Notifications section into
+  // view so the toggle is on screen on arrival. Gated on `!isLoading`: `useMe`
+  // resolves after mount and reflows the page (profile fields + the
+  // must-change-password banner), so scrolling before data settles lands in the
+  // wrong spot — the cause of the "doesn't work every time". Waiting for load,
+  // then deferring one frame for layout, makes it reliable. Mirrors the password
+  // section's scroll options.
+  useEffect(() => {
+    if (params.get('section') !== 'notifications' || isLoading) return;
+    const raf = requestAnimationFrame(() =>
+      notificationsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    );
+    return () => cancelAnimationFrame(raf);
+  }, [params, location.key, isLoading]);
 
 
   const nameChanged = name.trim() !== (me?.name ?? '').trim() && name.trim() !== '';
@@ -406,6 +437,7 @@ const SettingsPage = () => {
         </div>
 
         {/* ── Section 3: Notifications ────────────────────────── */}
+        <div ref={notificationsSectionRef}>
         <Section
           heading="Notifications"
           subtitle="Crisis and elevated alerts are always active. More preferences are coming soon."
@@ -451,6 +483,7 @@ const SettingsPage = () => {
             Notification preferences will be configurable in a future update.
           </p>
         </Section>
+        </div>
 
 
 

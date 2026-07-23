@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, BellRing, X } from "lucide-react";
+import { Bell, BellRing } from "lucide-react";
 import { useEscalations } from "../../hooks/useEscalations";
 import { useEscalationSound } from "../../hooks/useEscalationSound";
+import { useAlertSoundEnabled } from "../../hooks/useAlertSound";
 import { useAuth } from "../../contexts/AuthContext";
 import { getSeverityTokens } from "../../lib/badge-helpers";
 import {
@@ -22,10 +23,6 @@ export const NotificationsBell: React.FC = () => {
   const { can } = useAuth();
   const canEscalate = can("escalate");
   const [notifOpen, setNotifOpen] = useState(false);
-  // The clinician can dismiss the enable-sound nudge for this tab session; it
-  // stays dismissed until reload (no need to persist — audio unlocking is a
-  // per-tab, per-session gesture anyway).
-  const [soundNudgeDismissed, setSoundNudgeDismissed] = useState(false);
 
   // Escalation alerts carry mother PHI (name, postpartum day). Only roles with
   // the `escalate` permission may see or fetch them — mirrors the Dashboard
@@ -34,15 +31,41 @@ export const NotificationsBell: React.FC = () => {
     enabled: canEscalate,
   });
   const notifCount = escalations.length;
-  // `audioBlocked` = the autoplay gesture gate hasn't been crossed, so the alert
-  // chime would be silently dropped. Surface a one-click affordance to unlock it
-  // (and, on the same gesture, request OS-notification permission).
-  const { audioBlocked, unlock } = useEscalationSound(escalations);
-  const showSoundNudge = audioBlocked && !soundNudgeDismissed;
+  // Drives the alert chime (the hook's own effect plays it on each new
+  // escalation) and exposes `audioBlocked` (autoplay gate uncrossed → chime
+  // silently inert) + `resumeAudio` (cross that gate on a gesture, audio-only, no
+  // permission dialog). We use `resumeAudio` (not `unlock`) on the link so the
+  // notification-permission prompt stays on the Settings toggle / first-login
+  // modal and never pops mid-navigation.
+  const { audioBlocked, resumeAudio } = useEscalationSound(escalations);
+
+  // Live-reactive mute state so the header link reflects the CURRENT setting
+  // (re-labels the instant it's toggled — here, in Settings, or in another tab).
+  const soundOn = useAlertSoundEnabled();
+  // The chime is only truly audible when the pref is ON *and* the autoplay gate
+  // has been crossed. Labelling off the pref alone would read "Disable" on a
+  // just-restored ward monitor that's never been clicked — asserting sound is
+  // armed when it's silently blocked. Fold in `audioBlocked` so the label never
+  // over-promises; any click (incl. navigating to Settings) crosses the gate.
+  const effectivelyOn = soundOn && !audioBlocked;
+  const soundLinkLabel = effectivelyOn ? "Disable alert sound" : "Enable alert sound";
 
   const handleNotifNavigate = () => {
     setNotifOpen(false);
     navigate("/dashboard");
+  };
+
+  // The alert-sound link deep-links to Settings → Notifications (the one place
+  // that shows the real mute toggle) rather than flipping the pref inline. But it
+  // DOES cross the browser autoplay gate on this click via `resumeAudio()`: the
+  // one-shot passive gesture listener may already be spent (e.g. a backgrounded
+  // ward monitor whose AudioContext re-suspended), in which case only an explicit
+  // resume here makes the chime audible again. Audio-only — no permission dialog,
+  // so it never disrupts the destination scroll.
+  const handleEnableSound = () => {
+    resumeAudio();
+    setNotifOpen(false);
+    navigate("/settings?section=notifications");
   };
 
   if (!canEscalate) return null;
@@ -59,32 +82,6 @@ export const NotificationsBell: React.FC = () => {
           ? `${notifCount} escalation alert${notifCount === 1 ? "" : "s"} needing attention`
           : ""}
       </span>
-      <div className="flex items-center gap-2">
-      {/* Enable-alert-sound affordance. Shown only while the browser's autoplay
-          policy has the AudioContext blocked (e.g. a ward monitor left open,
-          never clicked) — otherwise every chime is silently dropped with no
-          visible sign. Clicking is the required user gesture to unlock; it also
-          requests OS-notification permission. Hidden the moment audio unlocks. */}
-      {showSoundNudge && (
-        <div className="flex items-center gap-0.5 rounded-full bg-primary-100 pl-2.5 pr-1 py-1 shadow-sm">
-          <button
-            type="button"
-            onClick={unlock}
-            className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-700 transition-colors"
-          >
-            <BellRing size={14} className="flex-none" />
-            <span className="whitespace-nowrap">Enable alert sound</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setSoundNudgeDismissed(true)}
-            aria-label="Dismiss enable alert sound"
-            className="p-1 rounded-full text-primary/60 hover:text-primary hover:bg-primary-200/50 transition-colors"
-          >
-            <X size={13} />
-          </button>
-        </div>
-      )}
       <Popover open={notifOpen} onOpenChange={setNotifOpen}>
       <PopoverTrigger asChild>
         <button
@@ -113,11 +110,21 @@ export const NotificationsBell: React.FC = () => {
           <span className="text-sm font-bold text-gray-900">
             Notifications
           </span>
-          {notifCount > 0 && (
-            <span className="text-xs font-medium text-gray-400">
-              {notifCount} needing attention
-            </span>
-          )}
+          {/* Right of the title, in line with it: a persistent link to the
+              alert-sound setting. Label tracks the live mute state ("Enable" vs
+              "Disable"). Routes to Settings → Notifications (the source of truth
+              for the toggle) and crosses the browser autoplay gate on the
+              gesture. Keeps the BellRing icon in both states — the click routes
+              to Settings, it doesn't mute inline, so a BellOff would mislead. */}
+          <button
+            type="button"
+            onClick={handleEnableSound}
+            aria-label={`Alert sound ${effectivelyOn ? "on" : "off"} — open notification settings`}
+            className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary-700 transition-colors"
+          >
+            <BellRing size={13} className="flex-none" />
+            <span className="whitespace-nowrap">{soundLinkLabel}</span>
+          </button>
         </div>
 
         {isError ? (
@@ -197,7 +204,6 @@ export const NotificationsBell: React.FC = () => {
         </button>
       </PopoverContent>
     </Popover>
-    </div>
     </>
   );
 };

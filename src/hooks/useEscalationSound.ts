@@ -203,18 +203,25 @@ export function useEscalationSound(escalations: EscalationItem[] | undefined) {
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
+  // Resume the AudioContext ONLY — cross the browser autoplay gate on a user
+  // gesture, without touching notification permission. For affordances that need
+  // the chime audible now but must NOT pop the OS-permission dialog (e.g. the
+  // bell's "Enable alert sound" link, where a dialog would disrupt the Settings
+  // scroll). resume() must be called from within a user gesture (callers are);
+  // the resulting `statechange` propagates through the external store, so any
+  // audioBlocked-driven affordance hides on its own — no manual setState.
+  const resumeAudio = useCallback(() => {
+    getAudioContext()?.resume().catch(() => {});
+  }, []);
+
   const unlock = useCallback(() => {
-    const ctx = getAudioContext();
-    // resume() must be called from within a user gesture (this handler is one).
-    // The resulting `statechange` propagates through the external store, so the
-    // affordance hides on its own — no manual setState needed here.
-    ctx?.resume().catch(() => {});
+    resumeAudio();
     // Piggyback the permission request on the same gesture so we never prompt
     // on load. Harmless if already granted/denied.
     if (typeof Notification !== "undefined" && Notification.permission === "default") {
       Notification.requestPermission().catch(() => {});
     }
-  }, []);
+  }, [resumeAudio]);
 
   useEffect(() => {
     const list = escalations ?? [];
@@ -238,5 +245,5 @@ export function useEscalationSound(escalations: EscalationItem[] | undefined) {
     prevKeys.current = keys;
   }, [escalations]);
 
-  return { audioBlocked, unlock };
+  return { audioBlocked, unlock, resumeAudio };
 }
