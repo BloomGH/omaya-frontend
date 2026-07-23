@@ -35,13 +35,16 @@ function getAudioContext(): AudioContext | null {
 // reads it via useSyncExternalStore so the "Enable alert sound" affordance shows
 // while blocked and hides the instant it unlocks, tear-free under concurrency.
 
-// True when audio can't play yet — the AudioContext exists but hasn't crossed
-// the autoplay gesture gate. If the API is unavailable we report "not blocked"
-// so the enable-sound affordance never dangles with no way to resolve it.
+// True when audio can't play yet — the AudioContext hasn't been created, or
+// exists but hasn't crossed the autoplay gesture gate. If the API is unavailable
+// we report "not blocked" so the enable-sound affordance never dangles with no
+// way to resolve it.
 function getAudioBlockedSnapshot(): boolean {
   if (typeof AudioContext === "undefined") return false;
-  const ctx = getAudioContext();
-  return ctx !== null && ctx.state !== "running";
+  // Pure read — do NOT construct the context here (getSnapshot runs during
+  // render). subscribeAudioBlocked constructs it on subscribe; until then a
+  // not-yet-created context counts as blocked so the affordance shows promptly.
+  return _ctx === null || _ctx.state !== "running";
 }
 
 function subscribeAudioBlocked(onChange: () => void): () => void {
@@ -101,9 +104,9 @@ function buildAlertSummary(items: EscalationItem[]): { title: string; body: stri
   // alone is not identifying and conveys the urgency; the details live behind
   // auth in the portal, one tap away.
   if (items.length === 1) {
-    const sev = items[0].severity.charAt(0).toUpperCase() + items[0].severity.slice(1);
+    // severity is already a lowercase tier enum ('crisis' | 'elevated' | …).
     return {
-      title: `New ${sev.toLowerCase()} alert`,
+      title: `New ${items[0].severity} alert`,
       body: "A patient needs attention — open Omaya to view.",
     };
   }

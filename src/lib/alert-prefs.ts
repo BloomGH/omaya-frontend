@@ -7,10 +7,22 @@ const ALERT_SOUND_KEY = "omaya_alert_sound_v1";
 
 /** Whether the escalation chime is enabled. Defaults to true (unset = on). */
 export function isAlertSoundEnabled(): boolean {
-  return localStorage.getItem(ALERT_SOUND_KEY) !== "0";
+  // localStorage can throw (private mode, quota, locked-down webview). This is
+  // read every poll tick and gates a SAFETY chime, so a storage error must never
+  // suppress it — fail to the default-on.
+  try {
+    return localStorage.getItem(ALERT_SOUND_KEY) !== "0";
+  } catch {
+    return true;
+  }
 }
 
-/** Persist the enable/mute choice. */
+/** Persist the enable/mute choice. Best-effort — never throws into the caller. */
 export function setAlertSoundEnabled(enabled: boolean): void {
-  localStorage.setItem(ALERT_SOUND_KEY, enabled ? "1" : "0");
+  try {
+    localStorage.setItem(ALERT_SOUND_KEY, enabled ? "1" : "0");
+  } catch {
+    // A storage failure just means the choice doesn't survive a refresh; the
+    // Settings toggle must not blow up over it.
+  }
 }
