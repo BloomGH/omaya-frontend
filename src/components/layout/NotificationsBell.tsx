@@ -32,12 +32,12 @@ export const NotificationsBell: React.FC = () => {
   });
   const notifCount = escalations.length;
   // Drives the alert chime (the hook's own effect plays it on each new
-  // escalation) and exposes `audioBlocked` — true while the browser autoplay gate
-  // is uncrossed, so the chime is silently inert until the first user gesture. We
-  // don't consume `unlock` here: the enable action + its permission prompt live
-  // on the Settings toggle this link routes to, so navigating never pops a dialog
-  // mid-scroll.
-  const { audioBlocked } = useEscalationSound(escalations);
+  // escalation) and exposes `audioBlocked` (autoplay gate uncrossed → chime
+  // silently inert) + `resumeAudio` (cross that gate on a gesture, audio-only, no
+  // permission dialog). We use `resumeAudio` (not `unlock`) on the link so the
+  // notification-permission prompt stays on the Settings toggle / first-login
+  // modal and never pops mid-navigation.
+  const { audioBlocked, resumeAudio } = useEscalationSound(escalations);
 
   // Live-reactive mute state so the header link reflects the CURRENT setting
   // (re-labels the instant it's toggled — here, in Settings, or in another tab).
@@ -55,13 +55,15 @@ export const NotificationsBell: React.FC = () => {
     navigate("/dashboard");
   };
 
-  // The alert-sound link points at Settings — the one place that shows the real
-  // sound toggle — rather than flipping state inline (which is what made the old
-  // "unlock" button misleading when a clinician had deliberately muted). It only
-  // navigates, deep-linking to the Notifications section so the toggle is on
-  // screen on arrival; enabling + the permission prompt happen there, on the
-  // toggle, so this navigation never pops a dialog that would disrupt the scroll.
+  // The alert-sound link deep-links to Settings → Notifications (the one place
+  // that shows the real mute toggle) rather than flipping the pref inline. But it
+  // DOES cross the browser autoplay gate on this click via `resumeAudio()`: the
+  // one-shot passive gesture listener may already be spent (e.g. a backgrounded
+  // ward monitor whose AudioContext re-suspended), in which case only an explicit
+  // resume here makes the chime audible again. Audio-only — no permission dialog,
+  // so it never disrupts the destination scroll.
   const handleEnableSound = () => {
+    resumeAudio();
     setNotifOpen(false);
     navigate("/settings?section=notifications");
   };
