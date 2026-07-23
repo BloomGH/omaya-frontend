@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell } from "lucide-react";
+import { Bell, BellRing, X } from "lucide-react";
 import { useEscalations } from "../../hooks/useEscalations";
 import { useEscalationSound } from "../../hooks/useEscalationSound";
 import { useAuth } from "../../contexts/AuthContext";
@@ -14,7 +14,7 @@ import {
 /**
  * Global notifications bell. Lives in the top bar so it's reachable from every
  * page. Open escalation alerts double as the in-app notifications — the same
- * `useEscalations` query (and 60s poll) the dashboard uses, so the cache is
+ * `useEscalations` query (and 15s poll) the dashboard uses, so the cache is
  * shared and there's no extra network cost for surfacing the count.
  */
 export const NotificationsBell: React.FC = () => {
@@ -22,15 +22,23 @@ export const NotificationsBell: React.FC = () => {
   const { can } = useAuth();
   const canEscalate = can("escalate");
   const [notifOpen, setNotifOpen] = useState(false);
+  // The clinician can dismiss the enable-sound nudge for this tab session; it
+  // stays dismissed until reload (no need to persist — audio unlocking is a
+  // per-tab, per-session gesture anyway).
+  const [soundNudgeDismissed, setSoundNudgeDismissed] = useState(false);
 
   // Escalation alerts carry mother PHI (name, postpartum day). Only roles with
   // the `escalate` permission may see or fetch them — mirrors the Dashboard
-  // gate. Passing `enabled` also stops the 60s poll for everyone else.
+  // gate. Passing `enabled` also stops the 15s poll for everyone else.
   const { data: escalations = [], isLoading, isError } = useEscalations({
     enabled: canEscalate,
   });
   const notifCount = escalations.length;
-  useEscalationSound(escalations);
+  // `audioBlocked` = the autoplay gesture gate hasn't been crossed, so the alert
+  // chime would be silently dropped. Surface a one-click affordance to unlock it
+  // (and, on the same gesture, request OS-notification permission).
+  const { audioBlocked, unlock } = useEscalationSound(escalations);
+  const showSoundNudge = audioBlocked && !soundNudgeDismissed;
 
   const handleNotifNavigate = () => {
     setNotifOpen(false);
@@ -51,6 +59,32 @@ export const NotificationsBell: React.FC = () => {
           ? `${notifCount} escalation alert${notifCount === 1 ? "" : "s"} needing attention`
           : ""}
       </span>
+      <div className="flex items-center gap-2">
+      {/* Enable-alert-sound affordance. Shown only while the browser's autoplay
+          policy has the AudioContext blocked (e.g. a ward monitor left open,
+          never clicked) — otherwise every chime is silently dropped with no
+          visible sign. Clicking is the required user gesture to unlock; it also
+          requests OS-notification permission. Hidden the moment audio unlocks. */}
+      {showSoundNudge && (
+        <div className="flex items-center gap-0.5 rounded-full bg-primary-100 pl-2.5 pr-1 py-1 shadow-sm">
+          <button
+            type="button"
+            onClick={unlock}
+            className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-700 transition-colors"
+          >
+            <BellRing size={14} className="flex-none" />
+            <span className="whitespace-nowrap">Enable alert sound</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSoundNudgeDismissed(true)}
+            aria-label="Dismiss enable alert sound"
+            className="p-1 rounded-full text-primary/60 hover:text-primary hover:bg-primary-200/50 transition-colors"
+          >
+            <X size={13} />
+          </button>
+        </div>
+      )}
       <Popover open={notifOpen} onOpenChange={setNotifOpen}>
       <PopoverTrigger asChild>
         <button
@@ -163,6 +197,7 @@ export const NotificationsBell: React.FC = () => {
         </button>
       </PopoverContent>
     </Popover>
+    </div>
     </>
   );
 };
