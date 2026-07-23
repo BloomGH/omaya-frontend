@@ -14,7 +14,7 @@ import {
 /**
  * Global notifications bell. Lives in the top bar so it's reachable from every
  * page. Open escalation alerts double as the in-app notifications — the same
- * `useEscalations` query (and 60s poll) the dashboard uses, so the cache is
+ * `useEscalations` query (and 15s poll) the dashboard uses, so the cache is
  * shared and there's no extra network cost for surfacing the count.
  */
 export const NotificationsBell: React.FC = () => {
@@ -29,7 +29,7 @@ export const NotificationsBell: React.FC = () => {
 
   // Escalation alerts carry mother PHI (name, postpartum day). Only roles with
   // the `escalate` permission may see or fetch them — mirrors the Dashboard
-  // gate. Passing `enabled` also stops the 60s poll for everyone else.
+  // gate. Passing `enabled` also stops the 15s poll for everyone else.
   const { data: escalations = [], isLoading, isError } = useEscalations({
     enabled: canEscalate,
   });

@@ -1,5 +1,9 @@
 export type Severity = 'crisis' | 'elevated' | 'monitor' | 'routine' | 'inactive';
 
+// Whether the current escalation rung's clinician SMS page was delivered.
+// Only "blocked" (an open L4 whose page was never delivered) surfaces in the UI.
+export type PageStatus = 'paged' | 'blocked' | 'pending' | 'not_applicable';
+
 export type CallStatus = 'completed' | 'in_progress' | 'upcoming' | 'missed';
 
 export type DeliveryType = 'vaginal' | 'caesarean';
@@ -87,6 +91,8 @@ export interface EscalationItem {
   severity: Severity;
   timeLeftMinutes: number;
   createdAt: string;
+  // Delivery state of the on-call clinician's SMS page for this escalation.
+  pageStatus: PageStatus;
 }
 
 export type StaffRole = string;

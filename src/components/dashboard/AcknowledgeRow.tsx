@@ -41,9 +41,22 @@ const AcknowledgeRow = ({ item, onAcknowledge }: AcknowledgeRowProps) => {
         </div>
       </TableCell>
       <TableCell className="py-3">
-        <Badge variant="outline" className={getSeverityBadgeClass(item.severity)} size="sm" dot>
-          {item.severity.charAt(0).toUpperCase() + item.severity.slice(1)}
-        </Badge>
+        <div className="flex items-center gap-1.5">
+          <Badge variant="outline" className={getSeverityBadgeClass(item.severity)} size="sm" dot>
+            {item.severity.charAt(0).toUpperCase() + item.severity.slice(1)}
+          </Badge>
+          {item.pageStatus === "blocked" && (
+            // The on-call clinician's SMS page was never delivered — the only
+            // visible difference between a paged and a blocked open alert.
+            <Badge
+              variant="outline"
+              className="bg-red-50 text-red-700 border-red-200"
+              size="sm"
+            >
+              Not paged
+            </Badge>
+          )}
+        </div>
       </TableCell>
       <TableCell className={`py-3 ${statusStyles}`}>
         <div className="text-base font-semibold">

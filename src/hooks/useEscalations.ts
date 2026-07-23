@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import { EscalationItem } from "../types";
+import { EscalationItem, PageStatus } from "../types";
 
 // Live-alert SLO: a new crisis (including a provisional crisis alert) must
 // surface in the dashboard/bell within ~15s, so we poll at this cadence even
@@ -17,6 +17,7 @@ function toEscalation(raw: Record<string, unknown>): EscalationItem {
     severity: (raw.severity as EscalationItem["severity"]) ?? "routine",
     timeLeftMinutes: (raw.time_left_minutes as number) ?? 0,
     createdAt: (raw.created_at as string) ?? "",
+    pageStatus: (raw.page_status as PageStatus) ?? "not_applicable",
   };
 }
 

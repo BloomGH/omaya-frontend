@@ -51,6 +51,13 @@ const EscalationModal = ({ isOpen, onClose, onAcknowledge, item }: EscalationMod
 
   const slaLimit = item.severity === 'crisis' ? 120 : 240;
   const progressPercent = Math.max(0, Math.min(100, (item.timeLeftMinutes / slaLimit) * 100));
+  // Tier label + SLA hours derived from severity (crisis = L4) — not hardcoded,
+  // so an L4 crisis isn't mislabelled "L3 · 4 hr" next to the "Not paged" callout.
+  const tierLabel =
+    ({ crisis: 'L4', elevated: 'L3', monitor: 'L2', routine: 'L1' } as Record<string, string>)[
+      item.severity
+    ] ?? item.severity.toUpperCase();
+  const slaHours = Math.round(slaLimit / 60);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -64,7 +71,7 @@ const EscalationModal = ({ isOpen, onClose, onAcknowledge, item }: EscalationMod
               <DialogTitle className="text-base font-semibold text-gray-900">{item.motherName}</DialogTitle>
               <DialogDescription asChild>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-xs text-gray-400 font-normal">L3 ·</span>
+                  <span className="text-xs text-gray-400 font-normal">{tierLabel} ·</span>
                   <Badge variant="outline" className={getSeverityBadgeClass(item.severity)} size="sm" dot>
                     {item.severity.charAt(0).toUpperCase() + item.severity.slice(1)}
                   </Badge>
@@ -95,10 +102,22 @@ const EscalationModal = ({ isOpen, onClose, onAcknowledge, item }: EscalationMod
           Alert triggered at day {item.dayPostpartum} of postnatal care. Clinician review required.
         </p>
 
+        {item.pageStatus === 'blocked' && (
+          // The escalation SMS page was never delivered. Force the clinician to
+          // reach the on-call person manually. Copy is PHI-safe: no name, phone,
+          // or provider error detail — just the blocked delivery state.
+          <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <AlertTriangle size={16} className="mt-0.5 flex-shrink-0 text-red-600" />
+            <span className="font-normal">
+              The on-call clinician was <span className="font-semibold">not reached by SMS</span> — delivery is blocked. Please contact them directly and acknowledge this alert.
+            </span>
+          </div>
+        )}
+
         <div>
           <div className="flex justify-between items-center mb-1">
             <span className="text-xs font-medium tracking-widest text-gray-400 uppercase">RESPONSE SLA</span>
-            <span className="text-xs font-normal text-gray-500">4 hr · L3</span>
+            <span className="text-xs font-normal text-gray-500">{slaHours} hr · {tierLabel}</span>
           </div>
           <div className="flex items-baseline">
             <span className="text-3xl font-bold text-gray-900">{formatTimeLeft(item.timeLeftMinutes)}</span>
