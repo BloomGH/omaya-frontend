@@ -6,6 +6,7 @@ import { Skeleton } from '../components/ui/skeleton';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { useMe } from '../hooks/useMe';
 import { useUpdateMe, useChangePassword } from '../hooks/useMutations';
+import { isAlertSoundEnabled, setAlertSoundEnabled } from '../lib/alert-prefs';
 import { toast } from 'sonner';
 
 /* ─── Toggle ─────────────────────────────────────────────────── */
@@ -262,6 +263,19 @@ const SettingsPage = () => {
   const passwordSectionRef = useRef<HTMLDivElement>(null);
 
   const [name, setName] = useState('');
+  // In-app escalation alert sound — persisted per-browser in localStorage. This
+  // chime is the de-facto real-time notifier, so it defaults ON; muting is an
+  // explicit opt-out. Muting only silences the chime — OS notifications (when
+  // permitted) still fire so a muted tab isn't left with no signal.
+  const [alertSound, setAlertSound] = useState<boolean>(() => isAlertSoundEnabled());
+
+  const toggleAlertSound = () => {
+    setAlertSound((prev) => {
+      const next = !prev;
+      setAlertSoundEnabled(next);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (me) setName(me.name ?? '');
@@ -394,8 +408,14 @@ const SettingsPage = () => {
         {/* ── Section 3: Notifications ────────────────────────── */}
         <Section
           heading="Notifications"
-          subtitle="Notification preferences are coming soon. Crisis and elevated alerts are always active."
+          subtitle="Crisis and elevated alerts are always active. More preferences are coming soon."
         >
+          <NotifRow
+            label="Alert sound"
+            description="Play a chime in this browser when a new escalation arrives."
+            enabled={alertSound}
+            onToggle={toggleAlertSound}
+          />
           <NotifRow
             label="Crisis alerts (L4)"
             description="Always on. A mother in crisis needs an immediate response."

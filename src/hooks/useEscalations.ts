@@ -33,6 +33,12 @@ export const useEscalations = (options?: { enabled?: boolean }) => {
     // active escalations, so the first crisis after a quiet period surfaces
     // within the SLO rather than waiting up to a minute for the next poll.
     refetchInterval: LIVE_ALERT_POLL_MS,
+    // Keep polling while the tab is backgrounded/hidden (React Query pauses the
+    // interval by default when the tab isn't visible). This in-app alert is the
+    // de-facto only real-time notifier — a crisis arriving while a clinician is
+    // on another tab must still be detected (chime on refocus + OS notification
+    // now, not only when they happen to look back).
+    refetchIntervalInBackground: true,
     // Callers without the `escalate` permission must not fetch escalation data
     // (it contains mother PHI). Defaults to enabled for the dashboard.
     enabled: options?.enabled ?? true,
