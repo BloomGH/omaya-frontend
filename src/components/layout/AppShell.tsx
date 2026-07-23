@@ -29,6 +29,7 @@ import {
 } from "../../components/ui/tooltip";
 import { Button } from "../../components/ui/Button";
 import { NotificationsBell } from "./NotificationsBell";
+import { AlertSoundPrompt } from "./AlertSoundPrompt";
 import {
   Popover,
   PopoverContent,
@@ -401,6 +402,12 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── FIRST-LOGIN ALERT-SOUND PROMPT ───────────────────── */}
+      {/* AppShell sits behind Protected and wraps every page, so mounting here
+          yields exactly one instance. Self-gated: only shows once, only for
+          roles that can act on escalations. */}
+      <AlertSoundPrompt />
     </div>
   );
 };
