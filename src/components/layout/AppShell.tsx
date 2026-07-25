@@ -105,10 +105,15 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
     };
   }, [hospitalName]);
 
-  const handleSignOut = async () => {
-    // Ask the server to clear the HttpOnly session cookie (JS can't). Never
-    // let a failed logout trap the user signed-in — clear + navigate regardless.
-    await logout();
+  const handleSignOut = () => {
+    // Fire-and-forget. The server still needs the round-trip to clear the
+    // HttpOnly session cookie (JS can't), but the clinician must never WAIT on
+    // it: `await` here held local cleanup behind the shared 15s request timeout,
+    // so on a stalled network the portal stayed visibly signed-in and fully
+    // usable after sign-out was confirmed — on a shared clinic device that is
+    // precisely the risk sign-out exists to remove. `logout()` swallows its own
+    // errors, and navigating does not abort the in-flight request.
+    void logout();
     queryClient.removeQueries({ queryKey: ["me"] });
     clearSession();
     navigate("/", { replace: true });

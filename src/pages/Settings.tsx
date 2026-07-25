@@ -463,7 +463,12 @@ const SettingsPage = () => {
         >
           <NotifRow
             label="Alert sound"
-            description="Play a chime in this browser when a new escalation arrives."
+            // Discloses the SECOND channel this toggle turns on. Enabling calls
+            // `unlock()`, which also requests OS-notification permission — and a
+            // desktop notification can surface an escalation outside the portal
+            // (lock screen, shared clinic machine). Muting silences only the
+            // chime, by design, so that asymmetry has to be stated too.
+            description="Play a chime in this browser when a new escalation arrives. Also asks permission to show desktop notifications — those keep appearing even when the chime is muted."
             enabled={alertSound}
             onToggle={toggleAlertSound}
           />
