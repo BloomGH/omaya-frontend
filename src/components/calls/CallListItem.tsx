@@ -28,7 +28,7 @@ const CallListItem = ({ call, isSelected, onClick }: CallListItemProps) => {
       aria-label={`View call for ${call.motherName}`}
       data-slide-active={isSelected ? "true" : undefined}
       className={`
-        relative z-10 w-full px-4 py-3 text-left transition-all duration-200 ease-out
+        relative z-10 w-full px-4 py-3 text-left transition-[background-color,transform] duration-200 ease-out
         ${isSelected ? "" : "hover:bg-gray-50 hover:translate-x-0.5"}
       `}
     >

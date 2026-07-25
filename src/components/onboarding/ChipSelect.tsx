@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 
 interface Option {
   value: string;
@@ -15,6 +16,8 @@ interface ChipSelectProps {
 }
 
 const ChipSelect = ({ options, selected, onChange, max, id }: ChipSelectProps) => {
+  const selectedSet = useMemo(() => new Set(selected), [selected]);
+
   const toggleOption = (value: string) => {
     const option = options.find((o) => o.value === value);
     if (option?.disabled) return;
@@ -32,7 +35,7 @@ const ChipSelect = ({ options, selected, onChange, max, id }: ChipSelectProps) =
   return (
     <div id={id} className="flex flex-wrap gap-3">
       {options.map((option) => {
-        const isSelected = selected.includes(option.value);
+        const isSelected = selectedSet.has(option.value);
         return (
           <button
             type="button"
@@ -41,7 +44,7 @@ const ChipSelect = ({ options, selected, onChange, max, id }: ChipSelectProps) =
             disabled={option.disabled}
             aria-pressed={isSelected}
             className={`
-              px-4 py-2.5 rounded-xl border text-sm transition-all flex flex-col text-left
+              px-4 py-2.5 rounded-xl border text-sm transition-[color,background-color,border-color,opacity] flex flex-col text-left
               ${
                 option.disabled
                   ? 'border-gray-200 bg-gray-50 text-gray-400 opacity-60'

@@ -234,6 +234,7 @@ const MothersPage = () => {
                 <SlidersHorizontal size={14} />
                 <span>Filter</span>
                 {(severityFilter !== "all" || statusFilter !== "all") && (
+                  // react-doctor-disable-next-line react-doctor/no-transition-all -- animate-in enter keyframe (duration-N is animation-duration), not a CSS transition:all
                   <span className="ml-1 w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center animate-in zoom-in-50 duration-150 motion-reduce:animate-none">
                     {(severityFilter !== "all" ? 1 : 0) +
                       (statusFilter !== "all" ? 1 : 0)}
@@ -326,18 +327,16 @@ const MothersPage = () => {
             <>
               <div
                 aria-hidden
-                className="absolute left-0 right-0 top-0 z-0 bg-gray-50 transition-all duration-300 ease-out pointer-events-none"
+                className="absolute left-0 right-0 top-0 z-0 h-px origin-top bg-gray-50 transition-transform duration-300 ease-out pointer-events-none"
                 style={{
-                  height: motherIndicator.height,
-                  transform: `translateY(${motherIndicator.top}px)`,
+                  transform: `translateY(${motherIndicator.top}px) scaleY(${motherIndicator.height})`,
                 }}
               />
               <div
                 aria-hidden
-                className={`absolute left-0 top-0 z-0 w-1 transition-all duration-300 ease-out pointer-events-none ${activeAccent}`}
+                className={`absolute left-0 top-0 z-0 w-1 h-px origin-top transition-transform duration-300 ease-out pointer-events-none ${activeAccent}`}
                 style={{
-                  height: motherIndicator.height,
-                  transform: `translateY(${motherIndicator.top}px)`,
+                  transform: `translateY(${motherIndicator.top}px) scaleY(${motherIndicator.height})`,
                 }}
               />
             </>

@@ -22,7 +22,7 @@ const StaffPage = () => {
   if (isLoading && staffMembers.length === 0) {
     return (
       <div className="flex flex-col gap-6 overflow-y-auto h-full">
-        <div className="space-y-1">
+        <div className="space-y-1 mt-6 md:mt-8">
           <Skeleton className="h-8 w-40" />
           <Skeleton className="h-5 w-52" />
         </div>
@@ -84,8 +84,10 @@ const StaffPage = () => {
 
   return (
     <div className="flex flex-col gap-6 overflow-y-auto h-full">
-      {/* PAGE HEADER */}
-      <div className="flex items-start justify-between flex-shrink-0">
+      {/* PAGE HEADER — offset from the top so the action button clears the
+          notifications bell that floats top-right (matches the dashboard, whose
+          date line pushes its header row below the bell). */}
+      <div className="flex items-start justify-between flex-shrink-0 mt-6 md:mt-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Staff & roles</h1>
           <p className="text-sm text-gray-500 mt-1">

@@ -634,7 +634,7 @@ const NewDischarge = ({ onClose }: NewDischargeProps = {}) => {
                     setSearchPhase(false);
                     setCurrentStep(1);
                   }}
-                  className="w-full text-left bg-white border border-gray-200 rounded-xl px-4 py-3.5 hover:border-primary cursor-pointer transition-all flex justify-between items-center group shadow-sm"
+                  className="w-full text-left bg-white border border-gray-200 rounded-xl px-4 py-3.5 hover:border-primary cursor-pointer transition-colors flex justify-between items-center group shadow-sm"
                 >
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold text-gray-900">
@@ -706,7 +706,7 @@ const NewDischarge = ({ onClose }: NewDischargeProps = {}) => {
                 setSearchPhase(false);
                 setCurrentStep(0);
               }}
-              className="bg-white border border-gray-200 rounded-xl px-5 py-6 cursor-pointer hover:border-primary hover:bg-primary-100/30 transition-all flex flex-col items-center text-center gap-3 shadow-sm"
+              className="bg-white border border-gray-200 rounded-xl px-5 py-6 cursor-pointer hover:border-primary hover:bg-primary-100/30 transition-colors flex flex-col items-center text-center gap-3 shadow-sm"
             >
               <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
                 <UserPlus size={20} className="text-primary" />
@@ -723,7 +723,7 @@ const NewDischarge = ({ onClose }: NewDischargeProps = {}) => {
             <button
               type="button"
               onClick={() => openDrawer("add-mother")}
-              className="bg-white border border-gray-200 rounded-xl px-5 py-6 cursor-pointer hover:border-primary hover:bg-primary-100/30 transition-all flex flex-col items-center text-center gap-3 shadow-sm"
+              className="bg-white border border-gray-200 rounded-xl px-5 py-6 cursor-pointer hover:border-primary hover:bg-primary-100/30 transition-colors flex flex-col items-center text-center gap-3 shadow-sm"
             >
               <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
                 <Baby size={20} className="text-primary" />
@@ -991,7 +991,7 @@ const NewDischarge = ({ onClose }: NewDischargeProps = {}) => {
                     type="button"
                     key={type.id}
                     onClick={() => updateField("deliveryType", type.id as (typeof formData)["deliveryType"])}
-                    className={`border rounded-xl px-5 py-4 cursor-pointer transition-all flex flex-col items-center text-center gap-2 ${formData.deliveryType === type.id ? "border-primary bg-primary-100" : "border-gray-200 hover:border-primary/40"}`}
+                    className={`border rounded-xl px-5 py-4 cursor-pointer transition-colors flex flex-col items-center text-center gap-2 ${formData.deliveryType === type.id ? "border-primary bg-primary-100" : "border-gray-200 hover:border-primary/40"}`}
                   >
                     <type.icon
                       size={24}
@@ -1078,7 +1078,7 @@ const NewDischarge = ({ onClose }: NewDischargeProps = {}) => {
                 type="button"
                 key={outcome.id}
                 onClick={() => updateField("outcome", outcome.id as (typeof formData)["outcome"])}
-                className={`text-left border rounded-xl px-5 py-4 cursor-pointer transition-all flex items-center gap-4 ${formData.outcome === outcome.id ? "border-primary bg-primary-100" : "border-gray-200 hover:border-primary/40"} ${touched && !formData.outcome ? "border-red-400" : ""}`}
+                className={`text-left border rounded-xl px-5 py-4 cursor-pointer transition-colors flex items-center gap-4 ${formData.outcome === outcome.id ? "border-primary bg-primary-100" : "border-gray-200 hover:border-primary/40"} ${touched && !formData.outcome ? "border-red-400" : ""}`}
               >
                 <outcome.icon
                   size={24}
@@ -1644,7 +1644,7 @@ const NewDischarge = ({ onClose }: NewDischargeProps = {}) => {
                     type="button"
                     key={type.id}
                     onClick={() => updateField("deliveryType", type.id as (typeof formData)["deliveryType"])}
-                    className={`border rounded-xl px-5 py-4 cursor-pointer transition-all flex flex-col items-center text-center gap-2 ${formData.deliveryType === type.id ? "border-primary bg-primary-100" : "border-gray-200 hover:border-primary/40"}`}
+                    className={`border rounded-xl px-5 py-4 cursor-pointer transition-colors flex flex-col items-center text-center gap-2 ${formData.deliveryType === type.id ? "border-primary bg-primary-100" : "border-gray-200 hover:border-primary/40"}`}
                   >
                     <type.icon
                       size={24}
@@ -1697,7 +1697,7 @@ const NewDischarge = ({ onClose }: NewDischargeProps = {}) => {
                 type="button"
                 key={outcome.id}
                 onClick={() => updateField("outcome", outcome.id as (typeof formData)["outcome"])}
-                className={`text-left border rounded-xl px-5 py-4 cursor-pointer transition-all flex items-center gap-4 ${formData.outcome === outcome.id ? "border-primary bg-primary-100" : "border-gray-200 hover:border-primary/40"} ${touched && !formData.outcome ? "border-red-400" : ""}`}
+                className={`text-left border rounded-xl px-5 py-4 cursor-pointer transition-colors flex items-center gap-4 ${formData.outcome === outcome.id ? "border-primary bg-primary-100" : "border-gray-200 hover:border-primary/40"} ${touched && !formData.outcome ? "border-red-400" : ""}`}
               >
                 <outcome.icon
                   size={24}
@@ -1843,7 +1843,7 @@ const NewDischarge = ({ onClose }: NewDischargeProps = {}) => {
                   consentRecording: next ? prev.consentRecording : false,
                 }));
               }}
-              className={`w-full text-left border rounded-xl px-5 py-4 flex items-start gap-4 cursor-pointer transition-all ${formData.consentCalls ? "border-primary bg-primary-100" : "border-gray-200 bg-white"} ${touched && !formData.consentCalls ? "border-red-400" : ""}`}
+              className={`w-full text-left border rounded-xl px-5 py-4 flex items-start gap-4 cursor-pointer transition-colors ${formData.consentCalls ? "border-primary bg-primary-100" : "border-gray-200 bg-white"} ${touched && !formData.consentCalls ? "border-red-400" : ""}`}
             >
               <div
                 className={`w-5 h-5 rounded flex-shrink-0 border mt-0.5 flex items-center justify-center ${formData.consentCalls ? "bg-primary border-primary" : "bg-white border-gray-300"}`}
@@ -1874,7 +1874,7 @@ const NewDischarge = ({ onClose }: NewDischargeProps = {}) => {
                 updateField("consentRecording", !formData.consentRecording);
               }}
               aria-disabled={!formData.consentCalls || undefined}
-              className={`w-full text-left border rounded-xl px-5 py-4 flex items-start gap-4 transition-all ${
+              className={`w-full text-left border rounded-xl px-5 py-4 flex items-start gap-4 transition-[color,background-color,border-color,opacity] ${
                 !formData.consentCalls
                   ? "border-gray-200 bg-gray-50 opacity-60"
                   : formData.consentRecording

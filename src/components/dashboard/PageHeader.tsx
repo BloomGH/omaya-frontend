@@ -30,13 +30,18 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 }) => {
   return (
     <div>
-      <div className="flex justify-between items-start mb-1 lg:pt-1">
-        <span className="text-gray-400 text-xs md:text-sm font-normal">
-          {formatDate()}
-        </span>
+      {/* Date sits on its own line — the notifications bell (in AppShell)
+          floats top-right and lines up with it. */}
+      <span className="block text-gray-400 text-xs md:text-sm font-normal mb-2 md:mb-3">
+        {formatDate()}
+      </span>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-xl md:text-3xl font-bold text-gray-900">
+          {getGreeting()}, {userName}
+        </h1>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className={!onNewDischarge ? "cursor-not-allowed inline-flex" : "inline-flex"}>
+            <span className={!onNewDischarge ? "cursor-not-allowed inline-flex shrink-0" : "inline-flex shrink-0"}>
               <Button
                 variant="default"
                 onClick={onNewDischarge}
@@ -53,9 +58,6 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           </TooltipContent>
         </Tooltip>
       </div>
-      <h1 className="text-xl md:text-3xl font-bold text-gray-900">
-        {getGreeting()}, {userName}
-      </h1>
     </div>
   );
 };

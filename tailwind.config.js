@@ -6,7 +6,9 @@ export default {
   	extend: {
   		fontFamily: {
   			sans: [
+  				'Nb international pro webfont',
   				'Google Sans',
+  				'Arial',
   				'sans-serif'
   			]
   		},

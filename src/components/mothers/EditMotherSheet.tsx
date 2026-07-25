@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Loader2, CalendarIcon, AlertCircle } from "lucide-react";
 import { format, parse } from "date-fns";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../ui/sheet";
@@ -155,11 +155,13 @@ const EditMotherSheet = ({ isOpen, onClose, mother }: EditMotherSheetProps) => {
 
   // Re-seed the form each time the sheet opens (or the mother changes while
   // open) by comparing against the previous open-signature during render —
-  // avoids the extra render + stale-value flash of a useEffect.
+  // avoids the extra render + stale-value flash of a useEffect. Uses the pure
+  // "adjust state when a prop changes" idiom (setState during render triggers
+  // an immediate re-render with no committed paint).
   const openSig = isOpen ? mother.id : "__closed__";
-  const prevSig = useRef(openSig);
-  if (openSig !== prevSig.current) {
-    prevSig.current = openSig;
+  const [prevSig, setPrevSig] = useState(openSig);
+  if (openSig !== prevSig) {
+    setPrevSig(openSig);
     if (isOpen) {
       setForm(buildForm(mother));
       setEmergencyContacts(buildEmergencyContacts(mother));

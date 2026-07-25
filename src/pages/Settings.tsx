@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { Loader2, Lock, Eye, EyeOff, AlertCircle, AlertTriangle } from 'lucide-react';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -6,6 +7,9 @@ import { Skeleton } from '../components/ui/skeleton';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { useMe } from '../hooks/useMe';
 import { useUpdateMe, useChangePassword } from '../hooks/useMutations';
+import { useEscalationSound } from '../hooks/useEscalationSound';
+import { isAlertSoundEnabled, setAlertSoundEnabled } from '../lib/alert-prefs';
+import { extractApiError } from '../lib/api';
 import { toast } from 'sonner';
 
 /* ─── Toggle ─────────────────────────────────────────────────── */
@@ -25,7 +29,7 @@ const Toggle = ({ enabled, onChange, locked = false, label }: ToggleProps) => (
     onClick={locked ? undefined : onChange}
     className={`
       relative inline-flex w-11 h-6 rounded-full flex-shrink-0
-      transition-all duration-200 ease-in-out
+      transition-colors duration-200 ease-in-out
       ${enabled ? 'bg-primary' : 'bg-gray-200'}
       ${locked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
     `}
@@ -33,7 +37,7 @@ const Toggle = ({ enabled, onChange, locked = false, label }: ToggleProps) => (
     <span
       className={`
         absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm
-        transition-all duration-200 ease-in-out
+        transition-transform duration-200 ease-in-out
         ${enabled ? 'translate-x-5' : 'translate-x-0.5'}
       `}
     />
@@ -192,10 +196,28 @@ const ChangePasswordSection = () => {
       setConfirm('');
       setAttempted(false);
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number; data?: { error?: string } } })?.response?.status;
-      const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      if (status === 400 || code === 'incorrect_current_password') {
+      // Read the CANONICAL envelope ({error_code, message} under `detail`) via
+      // the shared helper. The hand-rolled shape probing this replaces matched
+      // nothing the backend actually sends: it tested `status === 400` and
+      // `data.error === 'incorrect_current_password'`, but a wrong current
+      // password is 401 `invalid_credentials` (auth.py). So the real case fell
+      // to the generic toast with no inline message — and 400, which is only
+      // ever about the NEW password (weak_password / password_too_long), was
+      // mislabelled "your current password is incorrect", sending clinicians to
+      // retype a password that was never wrong.
+      //
+      // This also completes the contract the 401 interceptor now depends on:
+      // `invalid_credentials` is deliberately NOT treated as a dead session
+      // (lib/api.ts AMBIGUOUS_401_CODES), on the premise that this page renders
+      // it. Now it does.
+      const { error_code, message, status } = extractApiError(err);
+      if (error_code === 'invalid_credentials') {
         setApiError('Your current password is incorrect.');
+      } else if (error_code === 'weak_password' || error_code === 'password_too_long') {
+        // Surface the server's own text: the client policy check mirrors the
+        // length/letter/digit rule but NOT bcrypt's 72-BYTE ceiling, so a long
+        // accented or non-Latin passphrase passes here and fails there.
+        setApiError(message);
       } else if (status === 403) {
         setApiError("You don't have permission to change your password.");
       } else {
@@ -259,13 +281,55 @@ const ChangePasswordSection = () => {
 const SettingsPage = () => {
   const { data: me, isLoading } = useMe();
   const updateMe = useUpdateMe();
+  const [params] = useSearchParams();
+  // `location.key` changes on EVERY navigation — including navigating to the same
+  // URL — so keying the scroll effect on it re-drives the scroll even when the
+  // clinician is already on /settings?section=notifications and clicks the link
+  // again (the search params alone wouldn't change, so the effect wouldn't re-run).
+  const location = useLocation();
   const passwordSectionRef = useRef<HTMLDivElement>(null);
+  const notificationsSectionRef = useRef<HTMLDivElement>(null);
 
   const [name, setName] = useState('');
+  // In-app escalation alert sound — persisted per-browser in localStorage. This
+  // chime is the de-facto real-time notifier, so it defaults ON; muting is an
+  // explicit opt-out. Muting only silences the chime — OS notifications (when
+  // permitted) still fire so a muted tab isn't left with no signal.
+  const [alertSound, setAlertSound] = useState<boolean>(() => isAlertSoundEnabled());
+  // `unlock` resumes the shared AudioContext + requests OS-notification permission,
+  // but only works inside a user gesture. Passing `undefined` means this hook
+  // instance never chimes itself — we only want `unlock`.
+  const { unlock } = useEscalationSound(undefined);
+
+  const toggleAlertSound = () => {
+    const next = !alertSound;
+    setAlertSound(next);
+    setAlertSoundEnabled(next);
+    // Turning sound ON is the moment to cross the browser autoplay gate and ask
+    // for notification permission — this click is the required gesture. No-op when
+    // disabling; harmless if permission is already granted/denied.
+    if (next) unlock();
+  };
 
   useEffect(() => {
     if (me) setName(me.name ?? '');
   }, [me]);
+
+  // Deep-link from the notifications bell's alert-sound link
+  // (/settings?section=notifications) — scroll the Notifications section into
+  // view so the toggle is on screen on arrival. Gated on `!isLoading`: `useMe`
+  // resolves after mount and reflows the page (profile fields + the
+  // must-change-password banner), so scrolling before data settles lands in the
+  // wrong spot — the cause of the "doesn't work every time". Waiting for load,
+  // then deferring one frame for layout, makes it reliable. Mirrors the password
+  // section's scroll options.
+  useEffect(() => {
+    if (params.get('section') !== 'notifications' || isLoading) return;
+    const raf = requestAnimationFrame(() =>
+      notificationsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    );
+    return () => cancelAnimationFrame(raf);
+  }, [params, location.key, isLoading]);
 
 
   const nameChanged = name.trim() !== (me?.name ?? '').trim() && name.trim() !== '';
@@ -392,10 +456,22 @@ const SettingsPage = () => {
         </div>
 
         {/* ── Section 3: Notifications ────────────────────────── */}
+        <div ref={notificationsSectionRef}>
         <Section
           heading="Notifications"
-          subtitle="Notification preferences are coming soon. Crisis and elevated alerts are always active."
+          subtitle="Crisis and elevated alerts are always active. More preferences are coming soon."
         >
+          <NotifRow
+            label="Alert sound"
+            // Discloses the SECOND channel this toggle turns on. Enabling calls
+            // `unlock()`, which also requests OS-notification permission — and a
+            // desktop notification can surface an escalation outside the portal
+            // (lock screen, shared clinic machine). Muting silences only the
+            // chime, by design, so that asymmetry has to be stated too.
+            description="Play a chime in this browser when a new escalation arrives. Also asks permission to show desktop notifications — those keep appearing even when the chime is muted."
+            enabled={alertSound}
+            onToggle={toggleAlertSound}
+          />
           <NotifRow
             label="Crisis alerts (L4)"
             description="Always on. A mother in crisis needs an immediate response."
@@ -431,6 +507,7 @@ const SettingsPage = () => {
             Notification preferences will be configurable in a future update.
           </p>
         </Section>
+        </div>
 
 
 

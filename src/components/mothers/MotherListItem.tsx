@@ -55,7 +55,7 @@ const MotherListItem = ({
       aria-label={`View ${mother.name}`}
       data-slide-active={isSelected ? "true" : undefined}
       className={`
-        relative z-10 w-full px-4 py-3 text-left border-l-4 border-l-transparent transition-all duration-200 ease-out
+        relative z-10 w-full px-4 py-3 text-left border-l-4 border-l-transparent transition-[color,background-color,transform] duration-200 ease-out
         ${isSelected ? "" : "hover:bg-gray-50 hover:translate-x-0.5"}
         ${isDimmed ? "text-gray-400" : ""}
       `}

@@ -1,0 +1,82 @@
+name: deploy-staging
+
+# Push to `staging` -> build the Vite app with the staging API base URL baked in,
+# then upload dist/ to S3. The staging box pulls it on a 30s systemd timer and
+# Caddy serves it on app-staging.omayacare.com. Replaces Vercel; no inbound SSH.
+#
+# Auth: GitHub OIDC -> IAM role omaya-frontend-staging-ci (no stored AWS keys).
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+# Queue deploys of the same ref; never cancel one mid-flight, so two `aws s3
+# sync` runs can't interleave into the same bucket.
+#
+# This NARROWS the bad window; it does NOT make the deploy atomic. `s3 sync
+# --delete` is non-atomic on EVERY run (object order is unspecified), and the
+# box's 30s pull timer can still snapshot a half-updated bucket — e.g. a new
+# index.html referencing a chunk not yet uploaded, which 404s until the next
+# sync. Closing that needs a versioned prefix + an atomic pointer swap, or
+# pausing the box timer around the sync. Tracked separately; don't read this
+# block as a guarantee that a partial upload can't ship.
+concurrency:
+  group: deploy-staging-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write   # OIDC token to assume the AWS upload role
+  contents: read
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    # With cancel-in-progress: false a wedged run holds the concurrency group
+    # instead of being cancelled by the next push, so an explicit bound is what
+    # keeps a stuck job from blocking deploys for GitHub's 6h default.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      # pnpm 11 to match the repo's pnpm-workspace.yaml settings (minimumReleaseAge,
+      # trustPolicy, allowBuilds — pnpm 10+ features). No `cache: pnpm` so setup-node
+      # doesn't probe `pnpm store path` (which needs a packages field).
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1  # v4.3.0
+        with:
+          version: 11
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: 22
+
+      # Vite inlines VITE_* at build time; .env.production is the reliable channel
+      # for a `vite build` (production mode). Add VITE_SENTRY_DSN here if you want
+      # frontend error reporting on staging.
+      - name: Write staging build env
+        run: |
+          cat > .env.production <<'EOF'
+          VITE_API_BASE_URL=https://backend-api-staging.omayacare.com
+          VITE_SENTRY_ENVIRONMENT=staging
+          VITE_SENTRY_TRACES_SAMPLE_RATE=0
+          EOF
+
+      # The committed lockfile IS the source of truth for a --frozen-lockfile CI
+      # install (no re-resolution happens). The dev-time supply-chain guards
+      # (minimumReleaseAge/trustPolicy) re-flag an already-locked entry
+      # (semver@6.3.1) on a fresh runner, which shouldn't block deploying a vetted
+      # lockfile. Strip them for THIS ephemeral CI checkout only; keep allowBuilds.
+      - name: Relax dev-only supply-chain guards for CI frozen install
+        run: sed -i '/^minimumReleaseAge:/d; /^trustPolicy:/d' pnpm-workspace.yaml
+
+      - run: pnpm install --frozen-lockfile
+      # Gate the deploy on the unit tests. Ahead of the build so a red suite
+      # fails the job before anything is published to S3.
+      - run: pnpm test
+      - run: pnpm build   # tsc -b && vite build
+
+      - name: Configure AWS creds via OIDC
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a  # v4.3.1
+        with:
+          role-to-assume: arn:aws:iam::868899308575:role/omaya-frontend-staging-ci
+          aws-region: eu-central-1
+
+      - name: Upload build to S3 (box pulls it on a 30s timer)
+        run: aws s3 sync dist/ s3://omaya-frontend-staging/ --delete --only-show-errors

@@ -69,6 +69,7 @@ const MotherDetail = ({
 
   if (!mother) {
     return (
+      // react-doctor-disable-next-line react-doctor/no-transition-all -- animate-in enter keyframe (duration-N is animation-duration), not a CSS transition:all
       <div className="flex flex-col items-center justify-center h-full animate-in fade-in-0 zoom-in-95 duration-300 motion-reduce:animate-none">
         <UserRound className="text-gray-300 mb-2" size={48} />
         <p className="text-sm text-gray-400 font-normal">
@@ -94,13 +95,14 @@ const MotherDetail = ({
       toast.success("Call triggered. She will receive a call shortly.");
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 409) toast.error("A call is already in progress for this mother.");
-      else if (status === 403) toast.error("Cannot call. Consent has been withdrawn.");
+      if (status === 409) toast.error("This mother is not active, so a call can't be placed.");
+      else if (status === 403) toast.error("Your role does not have permission to place calls.");
       else toast.error("Could not trigger call. Please try again.");
     }
   };
 
   return (
+    // react-doctor-disable-next-line react-doctor/no-transition-all -- animate-in enter keyframe (duration-N is animation-duration), not a CSS transition:all
     <div className="flex flex-1 flex-col min-h-0 animate-in fade-in-0 slide-in-from-right-3 duration-300 ease-out motion-reduce:animate-none">
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
 
@@ -119,6 +121,7 @@ const MotherDetail = ({
                     type="button"
                     onClick={onEditClick}
                     disabled={!onEditClick}
+                    aria-label="Edit mother details"
                     className="text-gray-300 hover:text-gray-500 transition-colors disabled:cursor-not-allowed"
                   >
                     <Pencil size={14} />

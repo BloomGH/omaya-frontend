@@ -1,4 +1,5 @@
-import { defineConfig } from 'vite'
+// defineConfig from vitest/config (not vite) so the `test` block below typechecks.
+import { defineConfig } from 'vitest/config'
 import path from 'path'
 import react from '@vitejs/plugin-react'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
@@ -51,4 +52,14 @@ export default defineConfig(({ command }) => ({
         })
       : undefined,
   ],
+  test: {
+    // jsdom, not node: the response interceptor reads window.location and
+    // clearSession() touches localStorage.
+    environment: 'jsdom',
+    globals: true,
+    include: ['src/**/*.test.{ts,tsx}'],
+    // The Sentry plugin is build-only and needs no token here; excluding e2e-ish
+    // dirs keeps `pnpm test` to unit scope.
+    exclude: ['node_modules', 'dist'],
+  },
 }))

@@ -1,5 +1,9 @@
 export type Severity = 'crisis' | 'elevated' | 'monitor' | 'routine' | 'inactive';
 
+// Whether the current escalation rung's clinician SMS page was delivered.
+// Only "blocked" (an open L4 whose page was never delivered) surfaces in the UI.
+export type PageStatus = 'paged' | 'blocked' | 'pending' | 'not_applicable';
+
 export type CallStatus = 'completed' | 'in_progress' | 'upcoming' | 'missed';
 
 export type DeliveryType = 'vaginal' | 'caesarean';
@@ -79,11 +83,16 @@ export interface Call {
 
 export interface EscalationItem {
   id: string;
+  // Originating call — stable across the provisional→real-alert transition, so
+  // the chime keys on this (not `id`, which changes when a provisional reconciles).
+  callId: string;
   motherName: string;
   dayPostpartum: number;
   severity: Severity;
   timeLeftMinutes: number;
   createdAt: string;
+  // Delivery state of the on-call clinician's SMS page for this escalation.
+  pageStatus: PageStatus;
 }
 
 export type StaffRole = string;

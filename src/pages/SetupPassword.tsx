@@ -11,6 +11,7 @@ import {
   type VerifyTokenResult,
 } from "../lib/auth-api";
 import { extractApiError } from "../lib/api";
+import { isAuthenticated } from "../lib/auth";
 
 type Phase = "verifying" | "invalid" | "ready";
 
@@ -87,12 +88,23 @@ const SetupPassword = () => {
           navigate("/dashboard", { replace: true });
           return;
         } catch {
+          // Racy first-login: the initial setPassword may have already
+          // activated the account + written a session before this retry ran
+          // against the now-consumed link token. If we're signed in, it
+          // succeeded — go to the dashboard instead of stranding the user.
+          if (isAuthenticated()) {
+            navigate("/dashboard", { replace: true });
+            return;
+          }
           setError("This link has expired. Request a new one.");
-          setSubmitting(false);
           return;
         }
       }
       setError(apiErr.message);
+    } finally {
+      // Reset in finally so every exit — success, retry-success, and each
+      // error branch — clears the busy flag. (On the navigate() success paths
+      // this runs just before unmount, which is a harmless no-op.)
       setSubmitting(false);
     }
   };

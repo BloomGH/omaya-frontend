@@ -30,7 +30,7 @@ const StatCard = ({
 }: StatCardProps) => {
   return (
     <Card
-      className={`border-0 shadow-none rounded-2xl ${TINT_BG[tint]} transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0`}
+      className={`border-0 shadow-none rounded-2xl ${TINT_BG[tint]} transition-[box-shadow,transform] duration-200 hover:shadow-md hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0`}
     >
       <CardContent className="p-3 md:p-4">
         <div className="flex justify-between items-start">
