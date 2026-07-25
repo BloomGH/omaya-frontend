@@ -14,6 +14,53 @@ export const api = axios.create({
   withCredentials: true,
 });
 
+// Endpoints that genuinely own their 401 inline, so the interceptor must not
+// hijack it. This is an exact allowlist, NOT an `/auth/` prefix: /auth/me is
+// the AuthContext bootstrap, and a 401 there is exactly the signal that turns
+// the optimistic shell into a real logout.
+const SELF_HANDLED_401_PATHS = new Set([
+  "/auth/sign-in", // invalid_credentials — Login.tsx renders it
+  "/auth/set-password", // setup_token_expired / invalid_setup_token — SetupPassword retries on it
+  "/auth/verify-token", // 400 today; pre-session screen, keep it self-handling
+  "/auth/forgot-password", // 200/429 today; pre-session screen
+]);
+
+// Endpoints whose 401 is AMBIGUOUS, keyed to the one error_code the page owns.
+// /auth/change-password declares Depends(current_user) backend-side, so it 401s
+// for a DEAD SESSION (token_expired/_invalid/_missing) just as readily as for a
+// wrong CURRENT password (invalid_credentials). Allowlisting it by path would
+// swallow the session-death case and strand a clinician on the forced-rotation
+// screen — typing the correct password and being told, forever, that it's wrong.
+// Discriminate on the code so only the password case is self-handled.
+const AMBIGUOUS_401_CODES = new Map([
+  ["/auth/change-password", "invalid_credentials"],
+]);
+
+/** True when the calling page renders this 401 itself and the interceptor must not hijack it. */
+function selfHandles401(path: string, error: AxiosError<unknown>): boolean {
+  if (SELF_HANDLED_401_PATHS.has(path)) return true;
+  const ownedCode = AMBIGUOUS_401_CODES.get(path);
+  return ownedCode !== undefined && extractApiError(error).error_code === ownedCode;
+}
+
+// Public auth screens where a dead session should still clear local state but
+// must NOT redirect: /activate?token= and /reset?token= carry the one-shot
+// link token in the URL, and bouncing to /login would discard it. (/login and
+// /, which just forwards to it, are here for the obvious reason.)
+const NO_REDIRECT_PATHS = new Set([
+  "/",
+  "/login",
+  "/forgot-password",
+  "/activate",
+  "/reset",
+]);
+
+/** Normalize `config.url` (a path today, but tolerate an absolute URL and a query string). */
+function requestPath(rawUrl: string): string {
+  const path = rawUrl.split("?")[0].replace(/^https?:\/\/[^/]+/, "");
+  return path.replace(/\/+$/, "") || "/";
+}
+
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError<unknown>) => {
@@ -25,11 +72,12 @@ api.interceptors.response.use(
     // profile is only an optimistic "logged-in" guess — see lib/auth.ts).
     // The first such 401 — including the bootstrap /auth/me fired by
     // AuthContext — is what turns the optimistic shell into a real logout.
-    // The /auth/* endpoints handle their own 401s inline (wrong password,
-    // bad setup token), so don't hijack those.
-    if (status === 401 && !url.startsWith("/auth/")) {
+    if (status === 401 && !selfHandles401(requestPath(url), error)) {
       clearSession();
-      if (window.location.pathname !== "/login") {
+      // Normalize BOTH sides: a trailing slash (/login/) still routes to the
+      // same screen, so comparing the raw pathname would let it escape the set
+      // and redirect /login/ to itself.
+      if (!NO_REDIRECT_PATHS.has(requestPath(window.location.pathname))) {
         // Preserve the intended destination so re-login lands back here
         // (mirrors RequireAuth's ?next= handling).
         const next = encodeURIComponent(
