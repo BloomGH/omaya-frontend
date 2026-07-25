@@ -17,7 +17,12 @@ import {
 import { useDrawer } from "../../contexts/DrawerContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { RolePermissions } from "../../types";
-import { getClinician, clearSession, initialsOf } from "../../lib/auth";
+import {
+  getClinician,
+  clearSession,
+  initialsOf,
+  SESSION_STORAGE_KEY,
+} from "../../lib/auth";
 import { logout } from "../../lib/auth-api";
 import { useSlideIndicator } from "../../hooks/useSlideIndicator";
 import { Sheet, SheetContent } from "../../components/ui/sheet";
@@ -104,6 +109,28 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       document.title = "Omaya Care";
     };
   }, [hospitalName]);
+
+  // Cross-tab sign-out. `clearSession()` only removes localStorage keys, and
+  // nothing listened for that, so a SECOND open tab kept its in-memory profile
+  // and went on polling /alerts with the still-valid HttpOnly cookie — rendering
+  // patient escalation data and firing desktop alerts after the clinician had
+  // signed out. On a shared clinic machine that is the whole threat model.
+  //
+  // JS cannot clear an HttpOnly cookie, so only the server round-trip truly ends
+  // the session (it bumps token_version). What IS guaranteed client-side is
+  // this: the instant any tab clears the session, every other tab drops it too —
+  // which also covers the case where that round-trip failed.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      // `key === null` is a whole-storage clear(); otherwise only care about ours.
+      if (e.key !== null && e.key !== SESSION_STORAGE_KEY) return;
+      if (getClinician()) return; // a sign-IN, or an unrelated rewrite
+      queryClient.clear();
+      navigate("/", { replace: true });
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [queryClient, navigate]);
 
   const handleSignOut = () => {
     // Fire-and-forget. The server still needs the round-trip to clear the

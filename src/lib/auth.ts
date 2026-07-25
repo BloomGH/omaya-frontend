@@ -22,6 +22,9 @@ export interface Clinician {
 }
 
 const CLINICIAN_KEY = "omaya_clinician_v2";
+/** The key other tabs watch to detect a sign-out here (see AppShell's `storage`
+ *  listener). Exported so the cross-tab guard can't drift from the real key. */
+export const SESSION_STORAGE_KEY = CLINICIAN_KEY;
 // A seeded/legacy seat may sign in with must_change_password=true. The
 // backend middleware 403s every non-auth route until the password is
 // rotated, so we stash the flag and force the /change-password screen.
