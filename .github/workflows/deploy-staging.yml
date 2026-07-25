@@ -67,6 +67,9 @@ jobs:
         run: sed -i '/^minimumReleaseAge:/d; /^trustPolicy:/d' pnpm-workspace.yaml
 
       - run: pnpm install --frozen-lockfile
+      # Gate the deploy on the unit tests. Ahead of the build so a red suite
+      # fails the job before anything is published to S3.
+      - run: pnpm test
       - run: pnpm build   # tsc -b && vite build
 
       - name: Configure AWS creds via OIDC
