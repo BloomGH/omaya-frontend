@@ -9,6 +9,7 @@ import { useMe } from '../hooks/useMe';
 import { useUpdateMe, useChangePassword } from '../hooks/useMutations';
 import { useEscalationSound } from '../hooks/useEscalationSound';
 import { isAlertSoundEnabled, setAlertSoundEnabled } from '../lib/alert-prefs';
+import { extractApiError } from '../lib/api';
 import { toast } from 'sonner';
 
 /* ─── Toggle ─────────────────────────────────────────────────── */
@@ -195,10 +196,28 @@ const ChangePasswordSection = () => {
       setConfirm('');
       setAttempted(false);
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number; data?: { error?: string } } })?.response?.status;
-      const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      if (status === 400 || code === 'incorrect_current_password') {
+      // Read the CANONICAL envelope ({error_code, message} under `detail`) via
+      // the shared helper. The hand-rolled shape probing this replaces matched
+      // nothing the backend actually sends: it tested `status === 400` and
+      // `data.error === 'incorrect_current_password'`, but a wrong current
+      // password is 401 `invalid_credentials` (auth.py). So the real case fell
+      // to the generic toast with no inline message — and 400, which is only
+      // ever about the NEW password (weak_password / password_too_long), was
+      // mislabelled "your current password is incorrect", sending clinicians to
+      // retype a password that was never wrong.
+      //
+      // This also completes the contract the 401 interceptor now depends on:
+      // `invalid_credentials` is deliberately NOT treated as a dead session
+      // (lib/api.ts AMBIGUOUS_401_CODES), on the premise that this page renders
+      // it. Now it does.
+      const { error_code, message, status } = extractApiError(err);
+      if (error_code === 'invalid_credentials') {
         setApiError('Your current password is incorrect.');
+      } else if (error_code === 'weak_password' || error_code === 'password_too_long') {
+        // Surface the server's own text: the client policy check mirrors the
+        // length/letter/digit rule but NOT bcrypt's 72-BYTE ceiling, so a long
+        // accented or non-Latin passphrase passes here and fails there.
+        setApiError(message);
       } else if (status === 403) {
         setApiError("You don't have permission to change your password.");
       } else {
