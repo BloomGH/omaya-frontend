@@ -79,6 +79,7 @@ export interface Call {
   summary?: string;
   transcript?: CallTranscriptRow[];
   audioUrl?: string;
+  channel?: "voice" | "whatsapp";
 }
 
 export interface EscalationItem {

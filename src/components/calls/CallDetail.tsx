@@ -184,6 +184,15 @@ const CallDetail = ({ call, isLoading }: CallDetailProps) => {
             <Badge variant="outline" className={getStatusBadgeClass(call.status)} size="sm" dot>
               {label}
             </Badge>
+            {call.channel === "whatsapp" && (
+              <Badge
+                variant="outline"
+                className="border-emerald-200 bg-emerald-50 text-emerald-700"
+                size="sm"
+              >
+                WhatsApp
+              </Badge>
+            )}
             <span className="text-xs text-gray-400">{call.callType}</span>
           </div>
         </div>

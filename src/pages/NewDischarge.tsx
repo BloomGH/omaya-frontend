@@ -163,6 +163,7 @@ const NewDischarge = ({ onClose }: NewDischargeProps = {}) => {
     risksOther: "",
     consentCalls: false,
     consentRecording: false,
+    whatsappOptIn: false,
   });
 
   const totalSteps = foundMother ? 5 : 6;
@@ -406,6 +407,7 @@ const NewDischarge = ({ onClose }: NewDischargeProps = {}) => {
           : {
               consent_calls: formData.consentCalls,
               consent_recording: formData.consentRecording,
+              whatsapp_opt_in: formData.whatsappOptIn,
             }),
         emergency_contacts: toEmergencyContactsPayload(emergencyContacts),
       };
@@ -432,6 +434,7 @@ const NewDischarge = ({ onClose }: NewDischargeProps = {}) => {
             : [],
           consent_calls: formData.consentCalls,
           consent_recording: formData.consentRecording,
+          whatsapp_opt_in: formData.whatsappOptIn,
         });
         const newId: string = motherRes.data.mother_id ?? motherRes.data.id;
         motherIdRef.current = newId;
@@ -1899,6 +1902,35 @@ const NewDischarge = ({ onClose }: NewDischargeProps = {}) => {
                 </span>
                 <span className="text-xs text-gray-400 font-semibold mt-2 uppercase tracking-wide">
                   {formData.consentCalls ? "Optional" : "Consent to calls first"}
+                </span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              aria-pressed={formData.whatsappOptIn}
+              onClick={() =>
+                updateField("whatsappOptIn", !formData.whatsappOptIn)
+              }
+              className={`w-full text-left border rounded-xl px-5 py-4 flex items-start gap-4 cursor-pointer transition-colors ${formData.whatsappOptIn ? "border-primary bg-primary-100" : "border-gray-200 bg-white"}`}
+            >
+              <div
+                className={`w-5 h-5 rounded flex-shrink-0 border mt-0.5 flex items-center justify-center ${formData.whatsappOptIn ? "bg-primary border-primary" : "bg-white border-gray-300"}`}
+              >
+                {formData.whatsappOptIn && (
+                  <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                )}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-gray-900">
+                  WhatsApp messages
+                </span>
+                <span className="block text-sm text-gray-500 font-normal mt-1 leading-relaxed">
+                  She can message Omaya on WhatsApp with questions or concerns
+                  between check-in calls. She can opt out at any time.
+                </span>
+                <span className="text-xs text-gray-400 font-semibold mt-2 uppercase tracking-wide">
+                  Optional
                 </span>
               </div>
             </button>
