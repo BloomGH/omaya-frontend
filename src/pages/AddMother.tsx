@@ -108,6 +108,7 @@ const AddMother = ({ onClose }: AddMotherProps = {}) => {
     risks: [] as string[],
     consentCalls: false,
     consentRecording: false,
+    whatsappOptIn: false,
   });
 
   const totalSteps = 5;
@@ -159,6 +160,7 @@ const AddMother = ({ onClose }: AddMotherProps = {}) => {
         risks: formData.risks,
         consent_calls: formData.consentCalls,
         consent_recording: formData.consentRecording,
+        whatsapp_opt_in: formData.whatsappOptIn,
       });
       queryClient.invalidateQueries({ queryKey: ["mothers"] });
       toast.success("Mother enrolled successfully.");
@@ -710,6 +712,41 @@ const AddMother = ({ onClose }: AddMotherProps = {}) => {
                 <span className="block text-sm text-gray-500 font-normal mt-1 leading-relaxed">
                   Calls may be recorded to improve care quality. Recordings are
                   stored securely and only used by her care team.
+                </span>
+                <span className="text-xs text-gray-400 font-semibold mt-2 uppercase tracking-wide">
+                  OPTIONAL
+                </span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              aria-pressed={formData.whatsappOptIn}
+              onClick={() =>
+                updateField("whatsappOptIn", !formData.whatsappOptIn)
+              }
+              className={`
+                w-full text-left border rounded-xl px-5 py-4 flex items-start gap-4 cursor-pointer transition-colors
+                ${formData.whatsappOptIn ? "border-primary bg-primary-100" : "border-gray-200 bg-white"}
+              `}
+            >
+              <div
+                className={`
+                w-5 h-5 rounded flex-shrink-0 border mt-0.5 flex items-center justify-center
+                ${formData.whatsappOptIn ? "bg-primary border-primary" : "bg-white border-gray-300"}
+              `}
+              >
+                {formData.whatsappOptIn && (
+                  <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                )}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-gray-900">
+                  WhatsApp messages
+                </span>
+                <span className="block text-sm text-gray-500 font-normal mt-1 leading-relaxed">
+                  She can message Omaya on WhatsApp with questions or concerns
+                  between check-in calls. She can opt out at any time.
                 </span>
                 <span className="text-xs text-gray-400 font-semibold mt-2 uppercase tracking-wide">
                   OPTIONAL

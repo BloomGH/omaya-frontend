@@ -18,6 +18,7 @@ function toCall(raw: Record<string, unknown>): Call {
     summary: raw.summary as string | undefined,
     transcript: raw.transcript as Call["transcript"],
     audioUrl: raw.audio_url as string | undefined,
+    channel: raw.channel as Call["channel"],
   };
 }
 

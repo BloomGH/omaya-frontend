@@ -42,14 +42,25 @@ const CallListItem = ({ call, isSelected, onClick }: CallListItemProps) => {
             <span className="block text-sm font-medium text-gray-900 truncate">
               {call.motherName}
             </span>
-            <Badge
-              variant="outline"
-              className={getStatusBadgeClass(call.status)}
-              size="sm"
-              dot
-            >
-              {label}
-            </Badge>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {call.channel === "whatsapp" && (
+                <Badge
+                  variant="outline"
+                  className="border-emerald-200 bg-emerald-50 text-emerald-700"
+                  size="sm"
+                >
+                  WhatsApp
+                </Badge>
+              )}
+              <Badge
+                variant="outline"
+                className={getStatusBadgeClass(call.status)}
+                size="sm"
+                dot
+              >
+                {label}
+              </Badge>
+            </div>
           </div>
 
           <div className="mt-1 flex items-center gap-1.5">
