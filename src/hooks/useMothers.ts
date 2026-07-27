@@ -1,6 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import { Mother, CheckIn, EmergencyContact } from "../types";
+import { Mother, CheckIn, EmergencyContact, WhatsAppCallInfo } from "../types";
+
+function toWhatsAppCallInfo(raw: unknown): WhatsAppCallInfo | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const wc = raw as Record<string, unknown>;
+  return {
+    available: Boolean(wc.available),
+    permissionStatus: (wc.permission_status as string) ?? undefined,
+    permissionExpiresAt: (wc.permission_expires_at as string) ?? undefined,
+    canRequestPermission: Boolean(wc.can_request_permission),
+    canRequestReason: (wc.can_request_reason as string) ?? undefined,
+  };
+}
 
 export function toMother(raw: Record<string, unknown>): Mother {
   return {
@@ -46,6 +58,7 @@ export function toMother(raw: Record<string, unknown>): Mother {
     emergencyContactName: (raw.emergency_contact_name as string) ?? undefined,
     emergencyContactPhone: (raw.emergency_contact_phone as string) ?? undefined,
     emergencyContactRelationship: (raw.emergency_contact_relationship as string) ?? undefined,
+    whatsappCall: toWhatsAppCallInfo(raw.whatsapp_call),
   };
 }
 

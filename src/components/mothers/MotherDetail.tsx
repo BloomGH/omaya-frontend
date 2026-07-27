@@ -10,6 +10,7 @@ import {
   Pencil,
   Loader2,
   PhoneCall,
+  ChevronDown,
 } from "lucide-react";
 import { Mother } from "../../types";
 import { Badge } from "../ui/Badge";
@@ -21,6 +22,12 @@ import {
 } from "../ui/dialog";
 import { getSeverityBadgeClass } from "../../lib/badge-helpers";
 import { Button } from "../ui/Button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
 import { Alert, AlertDescription } from "../ui/alert";
 import { formatDate, formatDateTime, formatPhone } from "../../lib/format";
@@ -89,15 +96,38 @@ const MotherDetail = ({
     .join("")
     .toUpperCase();
 
-  const handleCallNow = async () => {
+  const whatsappAvailable = mother.whatsappCall?.available ?? false;
+
+  const handleCallNow = async (route: "phone" | "whatsapp") => {
     try {
-      await triggerCall.mutateAsync(mother.id);
-      toast.success("Call triggered. She will receive a call shortly.");
+      const data = await triggerCall.mutateAsync({ motherId: mother.id, route });
+      // Rollback-skew guard: an older backend ignores the body and places a
+      // PHONE call. A WhatsApp success toast over a phone call would put a
+      // false statement in the clinician's head — check what actually ran.
+      if (route === "whatsapp" && (data as { route?: string })?.route !== "whatsapp") {
+        toast.warning("A phone call was placed instead — WhatsApp calling isn't available on the server yet.");
+        return;
+      }
+      toast.success(
+        route === "whatsapp"
+          ? "WhatsApp call triggered. She will receive a call shortly."
+          : "Call triggered. She will receive a call shortly.",
+      );
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 409) toast.error("This mother is not active, so a call can't be placed.");
-      else if (status === 403) toast.error("Your role does not have permission to place calls.");
-      else toast.error("Could not trigger call. Please try again.");
+      const resp = (err as {
+        response?: { status?: number; data?: { detail?: { error_code?: string; message?: string } } };
+      })?.response;
+      const status = resp?.status;
+      const detail = resp?.data?.detail;
+      if (status === 409 && detail?.error_code === "whatsapp_unavailable") {
+        toast.error(detail.message ?? "WhatsApp calling is not available for this mother.");
+      } else if (status === 409) {
+        toast.error("This mother is not active, so a call can't be placed.");
+      } else if (status === 403) {
+        toast.error("Your role does not have permission to place calls.");
+      } else {
+        toast.error("Could not trigger call. Please try again.");
+      }
     }
   };
 
@@ -452,25 +482,51 @@ const MotherDetail = ({
               <p>{onLogVisitClick ? "Record a manual visit or note." : "You don't have permission to log visits"}</p>
             </TooltipContent>
           </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="default"
-                size="sm"
-                className="flex items-center gap-1.5"
-                disabled={isWithdrawn || triggerCall.isPending}
-                onClick={handleCallNow}
+          <DropdownMenu>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex">
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="flex items-center gap-1.5"
+                      disabled={isWithdrawn || triggerCall.isPending}
+                    >
+                      {triggerCall.isPending
+                        ? <Loader2 size={15} className="animate-spin" />
+                        : <PhoneCall size={15} />}
+                      <span className="font-medium">Call now</span>
+                      <ChevronDown size={13} className="opacity-70" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p>{isWithdrawn ? "Cannot call. Consent withdrawn." : "Trigger an immediate check-in call."}</p>
+              </TooltipContent>
+            </Tooltip>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleCallNow("phone")}>
+                <PhoneCall size={14} className="mr-2" />
+                Phone call
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!whatsappAvailable}
+                onClick={() => handleCallNow("whatsapp")}
               >
-                {triggerCall.isPending
-                  ? <Loader2 size={15} className="animate-spin" />
-                  : <PhoneCall size={15} />}
-                <span className="font-medium">Call now</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>{isWithdrawn ? "Cannot call. Consent withdrawn." : "Trigger an immediate check-in call."}</p>
-            </TooltipContent>
-          </Tooltip>
+                <MessageCircle size={14} className="mr-2" />
+                WhatsApp call
+                {!whatsappAvailable && (
+                  <span className="ml-2 text-[10px] text-gray-400">
+                    {mother.whatsappCall?.permissionStatus
+                      ? `permission ${mother.whatsappCall.permissionStatus}`
+                      : "no permission"}
+                  </span>
+                )}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>

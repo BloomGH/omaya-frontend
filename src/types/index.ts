@@ -57,6 +57,19 @@ export interface Mother {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   emergencyContactRelationship?: string;
+  // Derived WhatsApp-call state (detail endpoint only). Everything is computed
+  // server-side — render it, never re-derive cooldowns/expiry client-side.
+  whatsappCall?: WhatsAppCallInfo;
+}
+
+export interface WhatsAppCallInfo {
+  // Whether triggering a call with route="whatsapp" would pass the permission
+  // gate right now (mother active + unexpired Meta grant).
+  available: boolean;
+  permissionStatus?: "requested" | "granted" | "denied" | "expired" | "revoked" | string;
+  permissionExpiresAt?: string;
+  canRequestPermission: boolean;
+  canRequestReason?: string;
 }
 
 export interface CallTranscriptRow {
@@ -79,7 +92,9 @@ export interface Call {
   summary?: string;
   transcript?: CallTranscriptRow[];
   audioUrl?: string;
-  channel?: "voice" | "whatsapp";
+  // 'whatsapp' is the TEXT channel (an episode); 'whatsapp_call' is a real
+  // voice conversation over WhatsApp — same call pipeline, different transport.
+  channel?: "voice" | "whatsapp" | "whatsapp_call";
 }
 
 export interface EscalationItem {
