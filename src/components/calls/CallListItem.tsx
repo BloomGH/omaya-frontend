@@ -43,13 +43,13 @@ const CallListItem = ({ call, isSelected, onClick }: CallListItemProps) => {
               {call.motherName}
             </span>
             <div className="flex items-center gap-1.5 shrink-0">
-              {call.channel === "whatsapp" && (
+              {(call.channel === "whatsapp" || call.channel === "whatsapp_call") && (
                 <Badge
                   variant="outline"
                   className="border-emerald-200 bg-emerald-50 text-emerald-700"
                   size="sm"
                 >
-                  WhatsApp
+                  {call.channel === "whatsapp_call" ? "WhatsApp call" : "WhatsApp"}
                 </Badge>
               )}
               <Badge
