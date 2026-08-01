@@ -1,10 +1,16 @@
 import { useState } from "react";
-import { PhoneCall, Clock, Heart, Calendar, Mic, Flag, Loader2, UserRound, FileText, ArrowLeft } from "lucide-react";
+import { PhoneCall, Clock, Heart, Calendar, Mic, Flag, Loader2, UserRound, FileText, ArrowLeft, ChevronDown, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Call } from "../../types";
 import { Badge } from "../ui/Badge";
 import { getSeverityBadgeClass, getStatusBadgeClass } from "../../lib/badge-helpers";
 import { Button } from "../ui/Button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
 import { WaveformPlayer } from "../ui/WaveformPlayer";
 import { useTriggerCall } from "../../hooks/useMutations";
@@ -44,16 +50,36 @@ const CallDetail = ({ call, isLoading }: CallDetailProps) => {
     navigate("/mothers", { state: { motherId: call.motherId } });
   };
 
-  const handleCallNow = async () => {
+  const handleCallNow = async (route: "phone" | "whatsapp") => {
     if (!call) return;
     try {
-      await triggerCall.mutateAsync(call.motherId);
-      toast.success("Call triggered. She will receive a call shortly.");
+      const data = await triggerCall.mutateAsync({ motherId: call.motherId, route });
+      // Rollback-skew guard: an older backend ignores the body and places a
+      // phone call — don't toast "WhatsApp" over a call that wasn't.
+      if (route === "whatsapp" && (data as { route?: string })?.route !== "whatsapp") {
+        toast.warning("A phone call was placed instead — WhatsApp calling isn't available on the server yet.");
+        return;
+      }
+      toast.success(
+        route === "whatsapp"
+          ? "WhatsApp call triggered. She will receive a call shortly."
+          : "Call triggered. She will receive a call shortly.",
+      );
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 409) toast.error("This mother is not active, so a call can't be placed.");
-      else if (status === 403) toast.error("Your role does not have permission to place calls.");
-      else toast.error("Could not trigger call. Please try again.");
+      const resp = (err as {
+        response?: { status?: number; data?: { detail?: { error_code?: string; message?: string } } };
+      })?.response;
+      const status = resp?.status;
+      const detail = resp?.data?.detail;
+      if (status === 409 && detail?.error_code === "whatsapp_unavailable") {
+        toast.error(detail.message ?? "WhatsApp calling is not available for this mother.");
+      } else if (status === 409) {
+        toast.error("This mother is not active, so a call can't be placed.");
+      } else if (status === 403) {
+        toast.error("Your role does not have permission to place calls.");
+      } else {
+        toast.error("Could not trigger call. Please try again.");
+      }
     }
   };
 
@@ -184,6 +210,15 @@ const CallDetail = ({ call, isLoading }: CallDetailProps) => {
             <Badge variant="outline" className={getStatusBadgeClass(call.status)} size="sm" dot>
               {label}
             </Badge>
+            {(call.channel === "whatsapp" || call.channel === "whatsapp_call") && (
+              <Badge
+                variant="outline"
+                className="border-emerald-200 bg-emerald-50 text-emerald-700"
+                size="sm"
+              >
+                {call.channel === "whatsapp_call" ? "WhatsApp call" : "WhatsApp"}
+              </Badge>
+            )}
             <span className="text-xs text-gray-400">{call.callType}</span>
           </div>
         </div>
@@ -271,21 +306,39 @@ const CallDetail = ({ call, isLoading }: CallDetailProps) => {
           </TooltipTrigger>
           <TooltipContent side="top"><p>Go to this mother's profile.</p></TooltipContent>
         </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="default"
-              size="sm"
-              className="flex items-center gap-1.5"
-              disabled={triggerCall.isPending}
-              onClick={handleCallNow}
-            >
-              {triggerCall.isPending ? <Loader2 size={15} className="animate-spin" /> : <PhoneCall size={15} />}
-              <span className="font-medium">Call now</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="top"><p>Trigger an immediate check-in call for this mother.</p></TooltipContent>
-        </Tooltip>
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex">
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="flex items-center gap-1.5"
+                    disabled={triggerCall.isPending}
+                  >
+                    {triggerCall.isPending ? <Loader2 size={15} className="animate-spin" /> : <PhoneCall size={15} />}
+                    <span className="font-medium">Call now</span>
+                    <ChevronDown size={13} className="opacity-70" />
+                  </Button>
+                </DropdownMenuTrigger>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top"><p>Trigger an immediate check-in call for this mother.</p></TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleCallNow("phone")}>
+              <PhoneCall size={14} className="mr-2" />
+              Phone call
+            </DropdownMenuItem>
+            {/* Permission state lives on the mother record; the backend 409s
+                with a clear message if WhatsApp isn't available for her. */}
+            <DropdownMenuItem onClick={() => handleCallNow("whatsapp")}>
+              <MessageCircle size={14} className="mr-2" />
+              WhatsApp call
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

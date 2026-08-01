@@ -25,18 +25,23 @@ export const useAcknowledgeAlert = () => {
 };
 
 /**
- * Hook to trigger an ad-hoc check-in call.
- * Uses POST /mothers/{mother_id}/calls from the API.
+ * Hook to trigger an ad-hoc check-in call on either transport.
+ * Uses POST /mothers/{mother_id}/calls from the API; `route` picks the
+ * transport ("phone" = Twilio, "whatsapp" = WhatsApp call). Same call, same
+ * pipeline — the backend 409s (`whatsapp_unavailable`) rather than silently
+ * falling back to phone.
  */
+export type CallRoute = "phone" | "whatsapp";
+
 export const useTriggerCall = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (motherId: string) => {
-      const response = await api.post(`/mothers/${motherId}/calls`);
+    mutationFn: async ({ motherId, route = "phone" }: { motherId: string; route?: CallRoute }) => {
+      const response = await api.post(`/mothers/${motherId}/calls`, { route });
       return response.data;
     },
-    onSuccess: (_data, motherId) => {
+    onSuccess: (_data, { motherId }) => {
       queryClient.invalidateQueries({ queryKey: ["calls"] });
       queryClient.invalidateQueries({ queryKey: ["mother", motherId] });
     },

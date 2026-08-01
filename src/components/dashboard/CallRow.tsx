@@ -48,6 +48,15 @@ const CallRow = ({
       </TableCell>
       <TableCell className="py-3 text-right">
         <div className="flex items-center justify-end gap-2">
+          {(call.channel === "whatsapp" || call.channel === "whatsapp_call") && (
+            <Badge
+              variant="outline"
+              className="border-emerald-200 bg-emerald-50 text-emerald-700"
+              size="sm"
+            >
+              {call.channel === "whatsapp_call" ? "WhatsApp call" : "WhatsApp"}
+            </Badge>
+          )}
           <Badge
             variant="outline"
             className={getStatusBadgeClass(call.status)}
