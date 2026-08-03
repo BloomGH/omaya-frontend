@@ -825,6 +825,10 @@ const AddMother = ({ onClose }: AddMotherProps = {}) => {
                 label: "Call recording",
                 value: formData.consentRecording ? "Consented" : "No consent",
               },
+              {
+                label: "WhatsApp messages",
+                value: formData.whatsappOptIn ? "Consented" : "No consent",
+              },
             ].map((row, idx) => (
               <div
                 key={row.label}

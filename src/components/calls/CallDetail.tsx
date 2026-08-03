@@ -14,6 +14,7 @@ import {
 import { Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
 import { WaveformPlayer } from "../ui/WaveformPlayer";
 import { useTriggerCall } from "../../hooks/useMutations";
+import { useMother } from "../../hooks/useMothers";
 import { formatDateTime } from "../../lib/format";
 import { toast } from "sonner";
 
@@ -40,6 +41,13 @@ function formatDuration(seconds?: number): string {
 const CallDetail = ({ call, isLoading }: CallDetailProps) => {
   const navigate = useNavigate();
   const triggerCall = useTriggerCall();
+  // WhatsApp availability and consent are properties of the mother RIGHT NOW,
+  // not of this past call — so they're read off her record rather than
+  // denormalised onto the call payload. Must stay above the early returns
+  // below, or it becomes a conditional hook; useMother is `enabled: !!id`, so
+  // the empty-string fallback is a no-op query. The ["mother", id] key is
+  // already invalidated by useTriggerCall, so this refreshes after a trigger.
+  const motherQuery = useMother(call?.motherId ?? "");
   // In-place view switch: the detail card transforms into the transcript view
   // (back button + waveform audio + full transcript) instead of a modal.
   // CallDetail is keyed on the call id in Calls.tsx, so this resets per call.
@@ -94,6 +102,19 @@ const CallDetail = ({ call, isLoading }: CallDetailProps) => {
   }
 
   if (!call) return null;
+
+  const mother = motherQuery.data;
+  const isWithdrawn = mother?.consentStatus === "withdrawn";
+  const whatsappAvailable = mother?.whatsappCall?.available ?? false;
+  // Disabled while the fetch is in flight too: labelling it "not available"
+  // before we know would be a false statement, not a conservative one.
+  const whatsappPending = motherQuery.isLoading;
+  // FAIL CLOSED: while consent state is unknown (loading) or unknowable
+  // (errored), the trigger stays disabled — an enabled "Call now" for a
+  // withdrawn mother relies on the backend refusing, which is a backstop,
+  // not a UI contract. Error gets its own rendering below, never the
+  // fabricated "no permission".
+  const consentUnknown = motherQuery.isLoading || motherQuery.isError;
 
   const label = statusLabel[call.status] ?? call.status;
   const isCompleted = call.status === "completed";
@@ -315,7 +336,7 @@ const CallDetail = ({ call, isLoading }: CallDetailProps) => {
                     variant="default"
                     size="sm"
                     className="flex items-center gap-1.5"
-                    disabled={triggerCall.isPending}
+                    disabled={isWithdrawn || consentUnknown || triggerCall.isPending}
                   >
                     {triggerCall.isPending ? <Loader2 size={15} className="animate-spin" /> : <PhoneCall size={15} />}
                     <span className="font-medium">Call now</span>
@@ -324,18 +345,46 @@ const CallDetail = ({ call, isLoading }: CallDetailProps) => {
                 </DropdownMenuTrigger>
               </span>
             </TooltipTrigger>
-            <TooltipContent side="top"><p>Trigger an immediate check-in call for this mother.</p></TooltipContent>
+            <TooltipContent side="top">
+              <p>
+                {isWithdrawn
+                  ? "Cannot call. Consent withdrawn."
+                  : motherQuery.isError
+                    ? "Couldn't verify consent — reload to retry."
+                    : motherQuery.isLoading
+                      ? "Checking consent…"
+                      : "Trigger an immediate check-in call for this mother."}
+              </p>
+            </TooltipContent>
           </Tooltip>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleCallNow("phone")}>
               <PhoneCall size={14} className="mr-2" />
               Phone call
             </DropdownMenuItem>
-            {/* Permission state lives on the mother record; the backend 409s
-                with a clear message if WhatsApp isn't available for her. */}
-            <DropdownMenuItem onClick={() => handleCallNow("whatsapp")}>
+            {/* Mirrors MotherDetail: offering an action the backend answers
+                with `whatsapp_unavailable` is a predictably failing click. */}
+            <DropdownMenuItem
+              disabled={whatsappPending || !whatsappAvailable}
+              onClick={() => handleCallNow("whatsapp")}
+            >
               <MessageCircle size={14} className="mr-2" />
               WhatsApp call
+              {/* An errored fetch must not render as "no permission" — that
+                  fabricates a consent fact we never obtained. */}
+              {motherQuery.isError && (
+                <span className="ml-2 text-[10px] text-gray-400">status unavailable</span>
+              )}
+              {!motherQuery.isError && !whatsappPending && !whatsappAvailable && (
+                <span className="ml-2 text-[10px] text-gray-400">
+                  {mother?.whatsappCall?.permissionStatus
+                    ? `permission ${mother.whatsappCall.permissionStatus}`
+                    : "no permission"}
+                </span>
+              )}
+              {whatsappPending && (
+                <span className="ml-2 text-[10px] text-gray-400">checking…</span>
+              )}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
