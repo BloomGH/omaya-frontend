@@ -267,11 +267,12 @@ const EditMotherSheet = ({ isOpen, onClose, mother }: EditMotherSheetProps) => {
                 label="Gravida"
                 type="number"
                 min="0"
+                max="30"
                 placeholder="0"
                 value={form.gravida}
                 onChange={(e) => {
                   const val = e.target.value;
-                  if (val === "" || parseInt(val) >= 0) updateField("gravida", val);
+                  if (val === "" || (parseInt(val) >= 0 && parseInt(val) <= 30)) updateField("gravida", val);
                 }}
                 fullWidth
               />
@@ -279,11 +280,12 @@ const EditMotherSheet = ({ isOpen, onClose, mother }: EditMotherSheetProps) => {
                 label="Para"
                 type="number"
                 min="0"
+                max="30"
                 placeholder="0"
                 value={form.para}
                 onChange={(e) => {
                   const val = e.target.value;
-                  if (val === "" || parseInt(val) >= 0) updateField("para", val);
+                  if (val === "" || (parseInt(val) >= 0 && parseInt(val) <= 30)) updateField("para", val);
                 }}
                 fullWidth
               />
