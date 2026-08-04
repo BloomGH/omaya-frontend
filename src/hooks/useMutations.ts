@@ -48,6 +48,37 @@ export const useTriggerCall = () => {
   });
 };
 
+/**
+ * Hook to ask a mother for WhatsApp call permission.
+ * Uses POST /mothers/{mother_id}/whatsapp-call-permission.
+ *
+ * Meta forbids business-initiated WhatsApp calls without her approval, so this
+ * is what unblocks a "no permission" mother. It sends her a message; it does
+ * NOT place a call and does NOT grant the permission — she still has to tap
+ * Allow, and her reply arrives asynchronously on the messaging webhook. The
+ * ["mother", id] invalidation therefore refreshes to `requested`, not
+ * `granted`; the flip to `granted` lands on a later refetch.
+ */
+export interface WhatsAppPermissionAck {
+  status: "requested" | "denied" | "error";
+  reason?: string | null;
+  permission_status?: string | null;
+}
+
+export const useRequestWhatsAppPermission = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ motherId }: { motherId: string }) => {
+      const response = await api.post(`/mothers/${motherId}/whatsapp-call-permission`);
+      return response.data as WhatsAppPermissionAck;
+    },
+    onSuccess: (_data, { motherId }) => {
+      queryClient.invalidateQueries({ queryKey: ["mother", motherId] });
+    },
+  });
+};
+
 export const useLogVisit = () => {
   const queryClient = useQueryClient();
   return useMutation({

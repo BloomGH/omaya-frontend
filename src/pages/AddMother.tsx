@@ -506,11 +506,12 @@ const AddMother = ({ onClose }: AddMotherProps = {}) => {
                   label="Gravida"
                   type="number"
                   min="0"
+                  max="30"
                   placeholder="Number of pregnancies"
                   value={formData.gravida}
                   onChange={(e) => {
                     const val = e.target.value;
-                    if (val === "" || parseInt(val) >= 0) {
+                    if (val === "" || (parseInt(val) >= 0 && parseInt(val) <= 30)) {
                       updateField("gravida", val);
                     }
                   }}
@@ -528,11 +529,12 @@ const AddMother = ({ onClose }: AddMotherProps = {}) => {
                   label="Para"
                   type="number"
                   min="0"
+                  max="30"
                   placeholder="Number of births"
                   value={formData.para}
                   onChange={(e) => {
                     const val = e.target.value;
-                    if (val === "" || parseInt(val) >= 0) {
+                    if (val === "" || (parseInt(val) >= 0 && parseInt(val) <= 30)) {
                       updateField("para", val);
                     }
                   }}

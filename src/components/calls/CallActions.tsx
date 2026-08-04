@@ -1,4 +1,4 @@
-import { PhoneCall, Loader2, UserRound, ChevronDown, MessageCircle } from "lucide-react";
+import { PhoneCall, Loader2, UserRound, ChevronDown, MessageCircle, BellRing } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/Button";
 import {
@@ -9,7 +9,9 @@ import {
 } from "../ui/dropdown-menu";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
 import { useCallNow } from "../../hooks/useCallNow";
+import { useRequestWhatsAppCallPermission } from "../../hooks/useWhatsAppPermission";
 import { useMother } from "../../hooks/useMothers";
+import { permissionLabel, askBlockedLabel, askHeldLabel } from "../../lib/whatsappPermission";
 
 interface CallActionsProps {
   motherId: string;
@@ -29,10 +31,16 @@ const CallActions = ({ motherId }: CallActionsProps) => {
   const navigate = useNavigate();
   const motherQuery = useMother(motherId);
   const { callNow, isPending } = useCallNow(motherId);
+  const {
+    requestPermission,
+    isPending: isAsking,
+    blocked: askBlocked,
+  } = useRequestWhatsAppCallPermission(motherId);
 
   const mother = motherQuery.data;
   const isWithdrawn = mother?.consentStatus === "withdrawn";
   const whatsappAvailable = mother?.whatsappCall?.available ?? false;
+  const canAskPermission = mother?.whatsappCall?.canRequestPermission ?? false;
   // Disabled while the fetch is in flight too: labelling it "not available"
   // before we know would be a false statement, not a conservative one.
   const whatsappPending = motherQuery.isLoading;
@@ -108,15 +116,43 @@ const CallActions = ({ motherId }: CallActionsProps) => {
             )}
             {!motherQuery.isError && !whatsappPending && !whatsappAvailable && (
               <span className="ml-2 text-[10px] text-gray-400">
-                {mother?.whatsappCall?.permissionStatus
-                  ? `permission ${mother.whatsappCall.permissionStatus}`
-                  : "no permission"}
+                {permissionLabel(mother?.whatsappCall?.permissionStatus)}
               </span>
             )}
             {whatsappPending && (
               <span className="ml-2 text-[10px] text-gray-400">checking…</span>
             )}
           </DropdownMenuItem>
+          {/* The unblock for the item above. Only offered when the WhatsApp
+              route is actually blocked on HER permission — once she has
+              granted it, re-asking would waste one of Meta's two weekly
+              slots. `onSelect` + preventDefault so the menu stays open long
+              enough for the toast to be attributable to the click. */}
+          {!motherQuery.isError && !whatsappPending && !whatsappAvailable && (
+            <DropdownMenuItem
+              disabled={!canAskPermission || isAsking || askBlocked !== null}
+              onSelect={(e) => {
+                e.preventDefault();
+                void requestPermission();
+              }}
+            >
+              {isAsking ? (
+                <Loader2 size={14} className="mr-2 animate-spin" />
+              ) : (
+                <BellRing size={14} className="mr-2" />
+              )}
+              Ask her to allow WhatsApp calls
+              {/* The last attempt's outcome outranks her stored state — it is
+                  the more recent fact, and it is why the item is shut. */}
+              {(askBlocked !== null || !canAskPermission) && (
+                <span className="ml-2 text-[10px] text-gray-400">
+                  {askHeldLabel(askBlocked) ??
+                    askBlockedLabel(mother?.whatsappCall?.canRequestReason) ??
+                    "unavailable"}
+                </span>
+              )}
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
