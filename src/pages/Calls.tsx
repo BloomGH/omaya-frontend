@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Search, ArrowLeft, SlidersHorizontal, X } from "lucide-react";
 import { useCalls, useCall } from "../hooks/useCalls";
 import { CallListItem } from "../components/calls/CallListItem";
@@ -10,7 +10,7 @@ import { useSlideIndicator } from "../hooks/useSlideIndicator";
 import { getStatusDotClass } from "../lib/badge-helpers";
 
 const CallsPage = () => {
-  const [selectedCallId, setSelectedCallId] = useState<string>("");
+  const [pickedCallId, setPickedCallId] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -20,18 +20,16 @@ const CallsPage = () => {
   const apiDate = dateFilter === "today" ? new Date().toISOString().slice(0, 10) : undefined;
   const { data: calls = [], isLoading } = useCalls(apiDate);
 
-  const { data: selectedCall = null, isLoading: isCallLoading } = useCall(selectedCallId);
+  // The selection is derived, not effected: a click wins, otherwise the first
+  // call in the fetched list is the default. A pick that's no longer in that
+  // list (switching the date filter refetches a different set) falls back to
+  // the first call rather than pointing at a call the list doesn't show.
+  // Validity is checked against `calls`, NOT `filteredCalls` — searching or
+  // filtering by status must not yank the detail pane to a different call.
+  const pickIsValid = calls.some((c) => c.id === pickedCallId);
+  const selectedCallId = (pickIsValid ? pickedCallId : "") || calls[0]?.id || "";
 
-  // Intentional: default-select the first call once on load. selectedCallId is
-  // then user-controlled (clicking a list item), so this is an init default,
-  // not derived state.
-  useEffect(() => {
-    // react-doctor-disable-next-line react-doctor/no-event-handler
-    if (calls.length > 0 && !selectedCallId) {
-      // react-doctor-disable-next-line react-doctor/no-derived-state
-      setSelectedCallId(calls[0].id);
-    }
-  }, [calls, selectedCallId]);
+  const { data: selectedCall = null, isLoading: isCallLoading } = useCall(selectedCallId);
 
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -61,7 +59,7 @@ if (search.trim()) {
   const activeAccent = activeCall ? getStatusDotClass(activeCall.status) : "";
 
   const handleSelectCall = (id: string) => {
-    setSelectedCallId(id);
+    setPickedCallId(id);
     setMobileDetailOpen(true);
   };
 
