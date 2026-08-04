@@ -79,8 +79,10 @@ const AcknowledgeRow = ({ item, onAcknowledge }: AcknowledgeRowProps) => {
           </Button>
         ) : (
           // Disabled: keep the tooltip — it's the only way to explain WHY
-          // the button can't be clicked.
-          <Tooltip>
+          // the button can't be clicked. disableHoverableContent so it closes
+          // the instant the pointer leaves, instead of lingering until the
+          // next pointermove re-checks Radix's hover grace-area polygon.
+          <Tooltip disableHoverableContent>
             <TooltipTrigger asChild>
               <span className="cursor-not-allowed inline-flex">
                 <Button variant="outline" size="sm" disabled>

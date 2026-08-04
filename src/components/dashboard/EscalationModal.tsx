@@ -132,7 +132,10 @@ const EscalationModal = ({ isOpen, onClose, onAcknowledge, item }: EscalationMod
         </div>
 
         <DialogFooter>
-          <Tooltip>
+          {/* disableHoverableContent: without it Radix keeps this tooltip open
+              until the next pointermove re-checks its hover grace-area, which
+              reads as the tooltip "sticking" after the mouse leaves. */}
+          <Tooltip disableHoverableContent>
             <TooltipTrigger asChild>
               <span className={!can("escalate") ? "w-full cursor-not-allowed" : "w-full"}>
                 <Button
