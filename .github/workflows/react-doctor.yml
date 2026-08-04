@@ -29,7 +29,14 @@ jobs:
   react-doctor:
     runs-on: ubuntu-latest
     steps:
+      # fetch-depth: 0 — React Doctor reports only the issues a PR INTRODUCES,
+      # which it works out by diffing against the merge base with the target
+      # branch. A shallow checkout has no merge base, so it silently falls back
+      # to listing every issue in the changed files, including ones that were
+      # already on staging. The action warns about this in its PR comment.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          fetch-depth: 0
 
       - uses: millionco/react-doctor@01820bb4fd4d0a4aebcd8df2b2a143a098649cb2  # v2.2.8
         with:
