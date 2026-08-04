@@ -11,6 +11,7 @@ import {
   Loader2,
   PhoneCall,
   ChevronDown,
+  BellRing,
 } from "lucide-react";
 import { Mother } from "../../types";
 import { Badge } from "../ui/Badge";
@@ -32,6 +33,8 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
 import { Alert, AlertDescription } from "../ui/alert";
 import { formatDate, formatDateTime, formatPhone } from "../../lib/format";
 import { useCallNow } from "../../hooks/useCallNow";
+import { useRequestWhatsAppCallPermission } from "../../hooks/useWhatsAppPermission";
+import { permissionLabel, askBlockedLabel, askHeldLabel } from "../../lib/whatsappPermission";
 
 interface MotherDetailProps {
   mother: Mother | null;
@@ -61,6 +64,11 @@ const MotherDetail = ({
   // Above the early return below — `mother` may be null, but the hook only
   // closes over the id, it doesn't fetch.
   const { callNow, isPending: isCallPending } = useCallNow(mother?.id ?? "");
+  const {
+    requestPermission,
+    isPending: isAskingPermission,
+    blocked: askBlocked,
+  } = useRequestWhatsAppCallPermission(mother?.id ?? "");
   const [activeTab, setActiveTab] = useState<Tab>("details");
   const [transcriptModal, setTranscriptModal] = useState<{ open: boolean; text: string }>({
     open: false,
@@ -98,6 +106,7 @@ const MotherDetail = ({
     .toUpperCase();
 
   const whatsappAvailable = mother.whatsappCall?.available ?? false;
+  const canAskPermission = mother.whatsappCall?.canRequestPermission ?? false;
 
   return (
     // react-doctor-disable-next-line react-doctor/no-transition-all -- animate-in enter keyframe (duration-N is animation-duration), not a CSS transition:all
@@ -487,12 +496,37 @@ const MotherDetail = ({
                 WhatsApp call
                 {!whatsappAvailable && (
                   <span className="ml-2 text-[10px] text-gray-400">
-                    {mother.whatsappCall?.permissionStatus
-                      ? `permission ${mother.whatsappCall.permissionStatus}`
-                      : "no permission"}
+                    {permissionLabel(mother.whatsappCall?.permissionStatus)}
                   </span>
                 )}
               </DropdownMenuItem>
+              {/* Mirrors CallActions: the unblock sits next to the thing it
+                  unblocks, and only while the route is blocked on her
+                  permission — re-asking a granted mother would burn one of
+                  Meta's two weekly slots for nothing. */}
+              {!whatsappAvailable && (
+                <DropdownMenuItem
+                  disabled={!canAskPermission || isAskingPermission || askBlocked !== null}
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    void requestPermission();
+                  }}
+                >
+                  {isAskingPermission ? (
+                    <Loader2 size={14} className="mr-2 animate-spin" />
+                  ) : (
+                    <BellRing size={14} className="mr-2" />
+                  )}
+                  Ask her to allow WhatsApp calls
+                  {(askBlocked !== null || !canAskPermission) && (
+                    <span className="ml-2 text-[10px] text-gray-400">
+                      {askHeldLabel(askBlocked) ??
+                        askBlockedLabel(mother.whatsappCall?.canRequestReason) ??
+                        "unavailable"}
+                    </span>
+                  )}
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
