@@ -31,8 +31,7 @@ import {
 import { Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
 import { Alert, AlertDescription } from "../ui/alert";
 import { formatDate, formatDateTime, formatPhone } from "../../lib/format";
-import { useTriggerCall } from "../../hooks/useMutations";
-import { toast } from "sonner";
+import { useCallNow } from "../../hooks/useCallNow";
 
 interface MotherDetailProps {
   mother: Mother | null;
@@ -59,7 +58,9 @@ const MotherDetail = ({
   onLogVisitClick,
   onEditClick,
 }: MotherDetailProps) => {
-  const triggerCall = useTriggerCall();
+  // Above the early return below — `mother` may be null, but the hook only
+  // closes over the id, it doesn't fetch.
+  const { callNow, isPending: isCallPending } = useCallNow(mother?.id ?? "");
   const [activeTab, setActiveTab] = useState<Tab>("details");
   const [transcriptModal, setTranscriptModal] = useState<{ open: boolean; text: string }>({
     open: false,
@@ -97,39 +98,6 @@ const MotherDetail = ({
     .toUpperCase();
 
   const whatsappAvailable = mother.whatsappCall?.available ?? false;
-
-  const handleCallNow = async (route: "phone" | "whatsapp") => {
-    try {
-      const data = await triggerCall.mutateAsync({ motherId: mother.id, route });
-      // Rollback-skew guard: an older backend ignores the body and places a
-      // PHONE call. A WhatsApp success toast over a phone call would put a
-      // false statement in the clinician's head — check what actually ran.
-      if (route === "whatsapp" && (data as { route?: string })?.route !== "whatsapp") {
-        toast.warning("A phone call was placed instead — WhatsApp calling isn't available on the server yet.");
-        return;
-      }
-      toast.success(
-        route === "whatsapp"
-          ? "WhatsApp call triggered. She will receive a call shortly."
-          : "Call triggered. She will receive a call shortly.",
-      );
-    } catch (err: unknown) {
-      const resp = (err as {
-        response?: { status?: number; data?: { detail?: { error_code?: string; message?: string } } };
-      })?.response;
-      const status = resp?.status;
-      const detail = resp?.data?.detail;
-      if (status === 409 && detail?.error_code === "whatsapp_unavailable") {
-        toast.error(detail.message ?? "WhatsApp calling is not available for this mother.");
-      } else if (status === 409) {
-        toast.error("This mother is not active, so a call can't be placed.");
-      } else if (status === 403) {
-        toast.error("Your role does not have permission to place calls.");
-      } else {
-        toast.error("Could not trigger call. Please try again.");
-      }
-    }
-  };
 
   return (
     // react-doctor-disable-next-line react-doctor/no-transition-all -- animate-in enter keyframe (duration-N is animation-duration), not a CSS transition:all
@@ -491,9 +459,9 @@ const MotherDetail = ({
                       variant="default"
                       size="sm"
                       className="flex items-center gap-1.5"
-                      disabled={isWithdrawn || triggerCall.isPending}
+                      disabled={isWithdrawn || isCallPending}
                     >
-                      {triggerCall.isPending
+                      {isCallPending
                         ? <Loader2 size={15} className="animate-spin" />
                         : <PhoneCall size={15} />}
                       <span className="font-medium">Call now</span>
@@ -507,13 +475,13 @@ const MotherDetail = ({
               </TooltipContent>
             </Tooltip>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleCallNow("phone")}>
+              <DropdownMenuItem onClick={() => callNow("phone")}>
                 <PhoneCall size={14} className="mr-2" />
                 Phone call
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={!whatsappAvailable}
-                onClick={() => handleCallNow("whatsapp")}
+                onClick={() => callNow("whatsapp")}
               >
                 <MessageCircle size={14} className="mr-2" />
                 WhatsApp call

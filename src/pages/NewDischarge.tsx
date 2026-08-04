@@ -2034,6 +2034,14 @@ const NewDischarge = ({ onClose }: NewDischargeProps = {}) => {
                 highlight: formData.consentCalls,
               },
               {
+                label: "Call recording",
+                value: formData.consentRecording ? "Consented" : "No consent",
+              },
+              {
+                label: "WhatsApp messages",
+                value: formData.whatsappOptIn ? "Consented" : "No consent",
+              },
+              {
                 label: "First call",
                 value:
                   formData.outcome === "well"
