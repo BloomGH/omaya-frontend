@@ -37,8 +37,22 @@ export const useTriggerCall = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ motherId, route = "phone" }: { motherId: string; route?: CallRoute }) => {
-      const response = await api.post(`/mothers/${motherId}/calls`, { route });
+    mutationFn: async ({
+      motherId,
+      route = "phone",
+      idempotencyKey,
+    }: {
+      motherId: string;
+      route?: CallRoute;
+      idempotencyKey: string;
+    }) => {
+      const response = await api.post(
+        `/mothers/${motherId}/calls`,
+        { route },
+        {
+          headers: route === "phone" ? { "Idempotency-Key": idempotencyKey } : undefined,
+        },
+      );
       return response.data;
     },
     onSuccess: (_data, { motherId }) => {
